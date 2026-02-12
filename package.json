@@ -26,10 +26,12 @@
   "description": "BOJ 학습 도우미 MCP Server - AI-powered algorithm problem study assistant",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.26.0",
-    "zod": "^4.3.6"
+    "zod": "^4.3.6",
+    "zod-to-json-schema": "^3.25.1"
   },
   "devDependencies": {
     "@types/node": "^25.2.3",
+    "@vitest/coverage-v8": "^4.0.18",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"
