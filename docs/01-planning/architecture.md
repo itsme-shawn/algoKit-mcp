@@ -1,32 +1,34 @@
 # 시스템 아키텍처 문서
 
 **BOJ 학습 도우미 MCP Server**
-**버전**: 1.1
-**마지막 업데이트**: 2026-02-13 (Phase 3 구현 완료)
+**버전**: 2.0 (Keyless Architecture)
+**마지막 업데이트**: 2026-02-13 (Phase 3 Keyless 아키텍처 구현 완료)
 
 ---
 
 ## 목차
 1. [시스템 개요](#시스템-개요)
-2. [아키텍처 다이어그램](#아키텍처-다이어그램)
-3. [컴포넌트 상세 설명](#컴포넌트-상세-설명)
-4. [데이터 흐름](#데이터-흐름)
-5. [기술 스택](#기술-스택)
-6. [설계 결정사항](#설계-결정사항)
-7. [확장성 및 성능](#확장성-및-성능)
+2. [Keyless 아키텍처 원칙](#keyless-아키텍처-원칙)
+3. [아키텍처 다이어그램](#아키텍처-다이어그램)
+4. [컴포넌트 상세 설명](#컴포넌트-상세-설명)
+5. [데이터 흐름](#데이터-흐름)
+6. [기술 스택](#기술-스택)
+7. [설계 결정사항](#설계-결정사항)
+8. [확장성 및 성능](#확장성-및-성능)
 
 ---
 
 ## 시스템 개요
 
 ### 목적
-BOJ 학습 도우미는 **MCP(Model Context Protocol)** 기반 서버로, Claude와 같은 AI 어시스턴트가 백준 온라인 저지 문제를 검색하고 학습을 지원할 수 있도록 도구를 제공합니다.
+BOJ 학습 도우미는 **MCP(Model Context Protocol)** 기반 서버로, Claude Code와 같은 AI 어시스턴트가 백준 온라인 저지 문제를 검색하고 학습을 지원할 수 있도록 도구를 제공합니다.
 
 ### 핵심 특징
+- **Keyless 아키텍처**: API 키 불필요, 결정적 데이터만 제공
 - **MCP 프로토콜 준수**: 표준 MCP SDK 사용
 - **Stateless 설계**: 각 요청은 독립적으로 처리
 - **외부 API 통합**: solved.ac API 활용
-- **AI 기반 힌트**: Claude API를 통한 맞춤형 힌트 생성
+- **Zero Configuration**: 즉시 사용 가능한 설정
 - **캐싱 최적화**: 자주 조회되는 데이터 캐싱
 
 ### 배포 모델
@@ -35,46 +37,102 @@ BOJ 학습 도우미는 **MCP(Model Context Protocol)** 기반 서버로, Claude
 
 ---
 
+## Keyless 아키텍처 원칙
+
+### 철학
+**MCP 서버는 결정적(Deterministic) 데이터만 제공하고, 자연어 생성은 Claude Code에 위임합니다.**
+
+### 핵심 원칙
+
+#### 1. Zero Configuration
+- **API 키 불필요**: 사용자는 환경 변수 설정 없이 즉시 사용 가능
+- **즉시 사용 가능**: 설치 후 바로 작동
+
+#### 2. Separation of Concerns
+```
+┌─────────────────────┬───────────────────────────────────┐
+│ MCP Server          │ 역할: 결정적 데이터 제공           │
+│                     │ - 문제 메타데이터 조회             │
+│                     │ - 구조화된 힌트 포인트 생성         │
+│                     │ - JSON 출력                       │
+└─────────────────────┴───────────────────────────────────┘
+
+┌─────────────────────┬───────────────────────────────────┐
+│ Claude Code         │ 역할: 자연어 생성                  │
+│                     │ - JSON 데이터 파싱                 │
+│                     │ - 사용자 친화적 메시지 생성         │
+│                     │ - 대화형 인터랙션                  │
+└─────────────────────┴───────────────────────────────────┘
+```
+
+#### 3. Deterministic Output
+- **예측 가능한 출력**: 같은 입력에 항상 같은 JSON 반환
+- **테스트 안정성**: LLM Mock 불필요, Snapshot 테스트 가능
+- **빠른 응답**: LLM 호출 없이 < 500ms 응답
+
+### Before/After 비교
+
+| 측면 | Before (LLM 기반) | After (Keyless) |
+|------|-------------------|-----------------|
+| **API 키** | ANTHROPIC_API_KEY 필수 | 불필요 ✅ |
+| **응답 시간** | 2-5초 (LLM 호출) | < 500ms ✅ |
+| **테스트** | LLM Mock 필요 | 결정적 출력, Snapshot 테스트 ✅ |
+| **비용** | Claude API 호출마다 과금 | 무료 ✅ |
+| **안정성** | LLM 출력 변동 가능 | 일관된 JSON ✅ |
+| **사용자 경험** | 설정 복잡 | Zero Configuration ✅ |
+
+---
+
 ## 아키텍처 다이어그램
 
-### 전체 시스템 구조
+### Keyless 아키텍처 전체 구조
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                        사용자                                │
-│          (Claude Desktop, ChatGPT, Claude Code, Codex...)   │
+│          (Claude Desktop, Claude Code, Codex...)            │
 └────────────────────────┬────────────────────────────────────┘
                          │
                          │ 자연어 대화
                          │
 ┌────────────────────────▼────────────────────────────────────┐
-│                   Claude AI Client                           │
+│                   Claude Code (AI Client)                    │
 │              (MCP Protocol Consumer)                         │
+│                                                              │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │  자연어 생성 레이어 (LLM이 담당)                      │  │
+│  │  - JSON 데이터 파싱                                  │  │
+│  │  - 사용자 친화적 메시지 생성                          │  │
+│  │  - 힌트 포인트를 자연어로 변환                        │  │
+│  │  - 대화형 복습 문서 작성                             │  │
+│  └──────────────────────────────────────────────────────┘  │
 └────────────────────────┬────────────────────────────────────┘
                          │
-                         │ MCP Protocol
-                         │ (JSON-RPC)
+                         │ MCP Protocol (JSON-RPC)
+                         │ Request: { problem_id, hint_level }
+                         │ Response: { JSON 데이터 }
                          │
 ┌────────────────────────▼────────────────────────────────────┐
 │                    MCP Server                                │
-│               (BOJ 학습 도우미)                              │
+│               (BOJ 학습 도우미 - Keyless)                    │
 │                                                              │
 │  ┌──────────────────────────────────────────────────────┐  │
 │  │                Tool Registry                          │  │
 │  │  - search_problems                                   │  │
 │  │  - get_problem                                       │  │
 │  │  - search_tags                                       │  │
-│  │  - get_hint                                          │  │
-│  │  - create_review                                     │  │
+│  │  ✅ analyze_problem (구조화된 힌트 JSON)              │  │
+│  │  ✅ generate_review_template (템플릿 + 프롬프트)      │  │
 │  └────────────┬─────────────────────────────────────────┘  │
 │               │                                              │
 │  ┌────────────▼──────────┐  ┌─────────────────────────┐    │
 │  │    Tool Handlers      │  │   Service Layer         │    │
-│  │  - search-problems.ts │  │  ✅ hint-generator.ts   │    │
-│  │  - get-problem.ts     │  │  ✅ review-generator.ts │    │
-│  │  - search-tags.ts     │  │                         │    │
-│  │  ✅ get-hint.ts       │  │                         │    │
-│  │  ✅ create-review.ts  │  │                         │    │
+│  │  - search-problems.ts │  │  ✅ problem-analyzer.ts │    │
+│  │  - get-problem.ts     │  │  ✅ review-template-    │    │
+│  │  - search-tags.ts     │  │     generator.ts        │    │
+│  │  ✅ analyze-problem.ts│  │                         │    │
+│  │  ✅ generate-review-  │  │  (힌트 패턴 정적 데이터)│    │
+│  │     template.ts       │  │  (템플릿 생성 로직)     │    │
 │  └────────────┬──────────┘  └──────────┬──────────────┘    │
 │               │                        │                    │
 │  ┌────────────▼────────────────────────▼──────────────┐    │
@@ -90,20 +148,20 @@ BOJ 학습 도우미는 **MCP(Model Context Protocol)** 기반 서버로, Claude
 │  ┌────────────▼──────────┐  ┌─────────────────────────┐    │
 │  │    Utilities          │  │   Type Definitions      │    │
 │  │  - tier-converter.ts  │  │  - api/types.ts         │    │
-│  │  - cache.ts           │  │  - types/problem.ts     │    │
+│  │  - cache.ts           │  │  - types/analysis.ts    │    │
+│  │                       │  │  - types/problem.ts     │    │
 │  └───────────────────────┘  └─────────────────────────┘    │
 └─────────────────────┬───────────────────────────────────────┘
                       │
-        ┌─────────────┼─────────────┐
-        │             │             │
-        ▼             ▼             ▼
-┌─────────────┐ ┌──────────┐ ┌──────────────┐
-│ solved.ac   │ │ ✅Claude │ │  (향후)      │
-│ API         │ │   API    │ │  File System │
-│             │ │ (hints)  │ │  (reviews)   │
-└─────────────┘ └──────────┘ └──────────────┘
+                      │ HTTPS (Public API)
+                      │
+                ┌─────▼─────┐
+                │ solved.ac │
+                │   API     │
+                └───────────┘
 
-** ✅ = Phase 3 구현 완료
+** ✅ = Phase 3 Keyless 아키텍처 구현 완료
+** 🗑️ Claude API 제거됨 (Zero Configuration)
 ```
 
 ### 레이어 구조
@@ -288,110 +346,131 @@ export interface Tag {
 
 ### 4. Service Layer (`src/services/`)
 
-#### `hint-generator.ts` (✅ Phase 3 완료)
-**역할**: Claude API 기반 힌트 생성 로직
+#### `problem-analyzer.ts` (✅ Phase 3 완료 - Keyless)
+**역할**: 문제 분석 및 구조화된 힌트 포인트 생성
 
-**구현 상태**: 완료 (283 lines)
+**구현 상태**: 완료 (535 lines)
 
-**아키텍처**:
+**아키텍처** (Keyless):
 ```typescript
-import Anthropic from '@anthropic-ai/sdk';
+export class ProblemAnalyzer {
+  constructor(private apiClient: SolvedAcClient) {}
 
-class HintGenerator {
-  private client: Anthropic | null;
-  private apiKey: string | undefined;
-  private model: string;
-  private maxTokens: number;
-  private temperature: number;
-  private timeout: number;
+  /**
+   * 문제 분석 및 힌트 포인트 생성
+   */
+  async analyze(
+    problemId: number,
+    includeSimilar = true
+  ): Promise<ProblemAnalysis> {
+    // 1. 문제 정보 조회
+    const problem = await this.apiClient.getProblem(problemId);
 
-  constructor(client?: Anthropic) {
-    // 환경 변수에서 설정 로드
-    this.apiKey = process.env.ANTHROPIC_API_KEY;
-    this.model = process.env.CLAUDE_MODEL || 'claude-3-5-sonnet-20241022';
-    this.maxTokens = parseInt(process.env.CLAUDE_MAX_TOKENS || '1024', 10);
-    this.temperature = parseFloat(process.env.CLAUDE_TEMPERATURE || '0.7');
-    this.timeout = parseInt(process.env.CLAUDE_TIMEOUT || '30000', 10);
+    // 2. 난이도 컨텍스트 생성
+    const difficulty = this.buildDifficultyContext(problem);
 
-    // 클라이언트 초기화
-    if (client) {
-      this.client = client;
-    } else if (this.apiKey) {
-      this.initializeClient();
-    }
+    // 3. 알고리즘 정보 생성
+    const algorithm = this.buildAlgorithmInfo(problem);
+
+    // 4. 힌트 포인트 생성 (레벨 1-3)
+    const hintPoints = this.generateHintPoints(problem);
+
+    // 5. 제약사항 추출
+    const constraints = this.extractConstraints(problem);
+
+    // 6. 주의사항 생성
+    const gotchas = this.generateGotchas(problem);
+
+    // 7. 유사 문제 추천
+    const similarProblems = includeSimilar
+      ? await this.findSimilarProblems(problem)
+      : [];
+
+    return {
+      problem,
+      difficulty,
+      algorithm,
+      hint_points: hintPoints,
+      constraints,
+      gotchas,
+      similar_problems: similarProblems,
+    };
   }
 
-  // 힌트 생성
-  async generateHint(
-    problem: Problem,
-    hintLevel: number,
-    userContext?: string
-  ): Promise<string> {
-    // 1. 입력 검증
-    if (!Number.isInteger(hintLevel) || hintLevel < 1 || hintLevel > 3) {
-      throw new InvalidInputError('힌트 레벨은 1-3 범위여야 합니다');
-    }
+  /**
+   * 힌트 포인트 생성 (정적 패턴 매핑)
+   */
+  private generateHintPoints(problem: Problem): HintPoint[] {
+    const primaryTag = problem.tags[0]?.key || 'implementation';
+    const pattern = HINT_PATTERNS[primaryTag] || HINT_PATTERNS['implementation'];
 
-    // 2. API 키 확인
-    if (!this.isConfigured()) {
-      throw new ConfigurationError('API 키가 설정되지 않았습니다');
-    }
-
-    // 3. 프롬프트 생성
-    const prompt = this.buildPrompt(problem, hintLevel, userContext);
-
-    // 4. Claude API 호출 (타임아웃 포함)
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-
-    const response = await this.client!.messages.create(
+    return [
+      // Level 1: 패턴 인식
       {
-        model: this.model,
-        max_tokens: this.maxTokens,
-        temperature: this.temperature,
-        messages: [{ role: 'user', content: prompt }]
+        level: 1,
+        type: 'pattern',
+        key: pattern.level1.key,
+        detail: pattern.level1.detail,
       },
-      { signal: controller.signal }
-    );
-
-    clearTimeout(timeoutId);
-
-    // 5. 텍스트 추출
-    const textContent = response.content.find(c => c.type === 'text');
-    return textContent?.text || '';
-  }
-
-  // 프롬프트 구성 (public - 테스트 가능)
-  buildPrompt(
-    problem: Problem,
-    hintLevel: number,
-    userContext?: string
-  ): string {
-    // 문제 메타데이터 포함
-    // 레벨별 프롬프트 차별화
-    // 난이도별 용어 조정
-    // 사용자 컨텍스트 반영
+      // Level 2: 핵심 통찰
+      {
+        level: 2,
+        type: 'insight',
+        key: pattern.level2.key,
+        detail: pattern.level2.detail,
+        example: pattern.level2.example,
+      },
+      // Level 3: 전략 단계
+      {
+        level: 3,
+        type: 'strategy',
+        key: pattern.level3.key,
+        steps: pattern.level3.steps,
+      },
+    ];
   }
 }
 ```
 
-**프롬프트 전략**:
-- **Level 1**: 문제 패턴 인식 (3-5문장, 카테고리 중심)
-- **Level 2**: 핵심 통찰 제공 (7-10문장, 핵심 아이디어 + 접근법)
-- **Level 3**: 상세 알고리즘 단계 (단계별, 시간/공간 복잡도 포함)
-- **난이도 조정**: Bronze (초보자 용어), Platinum (고급 기법)
-- **사용자 컨텍스트**: 제공 시 맞춤형 피드백
+**힌트 패턴 정적 매핑** (HINT_PATTERNS):
+- **Level 1**: 알고리즘 카테고리 (key + detail)
+  - 예: "동적 프로그래밍", "그리디 알고리즘", "그래프 탐색"
+- **Level 2**: 핵심 통찰 (key + detail + example)
+  - 예: "상태 정의와 점화식", "그리디 선택 전략"
+- **Level 3**: 구현 단계 (key + steps[])
+  - 예: ["1. 상태 정의", "2. 초기값 설정", "3. 점화식 구현", ...]
 
-**에러 처리**:
-- `ConfigurationError`: API 키 미설정
-- `InvalidInputError`: 잘못된 힌트 레벨
-- `ClaudeAPIError`: Claude API 오류 (401, 429, 500)
-- `TimeoutError`: 응답 시간 초과 (30초)
+**지원 알고리즘**:
+- `dp`, `greedy`, `graphs`, `math`, `implementation`, `string`, `data_structures` 등
 
-#### `review-generator.ts` (✅ Phase 3 완료)
-**역할**: 복습 문서 생성 (템플릿 기반)
+**출력 형식** (JSON):
+```json
+{
+  "problem": { /* 문제 메타데이터 */ },
+  "difficulty": { "tier": "Silver II", "level": 9, ... },
+  "algorithm": { "primary_tags": [...], "typical_approaches": [...] },
+  "hint_points": [
+    { "level": 1, "type": "pattern", "key": "동적 프로그래밍", ... },
+    { "level": 2, "type": "insight", "key": "상태 정의와 점화식", ... },
+    { "level": 3, "type": "strategy", "key": "Bottom-up 구현", ... }
+  ],
+  "constraints": [...],
+  "gotchas": [...],
+  "similar_problems": [...]
+}
+```
 
-**구현 상태**: 완료 (153 lines)
+**장점**:
+- ⚡ **빠른 응답**: < 500ms (LLM 호출 없음)
+- ✅ **결정적 출력**: 같은 입력 → 같은 JSON
+- 🧪 **테스트 안정성**: Snapshot 테스트 가능
+- 💰 **비용 절감**: API 비용 0원
+- 🔧 **유지보수 용이**: 힌트 패턴을 코드로 관리
+
+#### `review-template-generator.ts` (✅ Phase 3 완료 - Keyless)
+**역할**: 복습 템플릿 및 가이드 프롬프트 생성
+
+**구현 상태**: 완료
 
 **아키텍처**:
 ```typescript
@@ -595,125 +674,154 @@ class Cache<T> {
    ← "20개의 Gold DP 문제를 찾았습니다..."
 ```
 
-### 플로우 2: 힌트 생성 (get_hint) - ✅ Phase 3 완료
+### 플로우 2: 문제 분석 (analyze_problem) - ✅ Phase 3 Keyless 완료
 
 ```
 1. 사용자
-   ↓ "11053번 문제 레벨 2 힌트 줘"
-2. Claude AI
-   ↓ MCP 요청
-3. MCP Server (get_hint handler)
-   ↓ { problem_id: 11053, hint_level: 2, user_context: "..." }
+   ↓ "11053번 문제 분석해줘"
+2. Claude Code
+   ↓ MCP 요청 생성
+3. MCP Server (analyze_problem handler)
+   ↓ { problem_id: 11053, include_similar: true }
    ↓ Zod 스키마 검증
-4. Tool Handler (get-hint.ts)
-   ↓ GetHintInputSchema.parse(input)
-5. API Client (solvedac-client)
+4. Tool Handler (analyze-problem.ts)
+   ↓ AnalyzeProblemInputSchema.parse(input)
+5. Problem Analyzer Service (problem-analyzer.ts)
+   ↓ analyzer.analyze(11053, true)
+6. API Client (solvedac-client)
    ↓ GET /problem/show?problemId=11053
-6. solved.ac API
+7. solved.ac API
    ↓ 문제 메타데이터 반환 (JSON)
-7. Hint Generator Service (hint-generator.ts)
-   ↓ buildPrompt(problem, 2, userContext)
-   ↓ 프롬프트 구성:
-   ↓   - 문제 제목: "가장 긴 증가하는 부분 수열"
-   ↓   - 난이도: Silver II
-   ↓   - 태그: DP
-   ↓   - 레벨 2 지시사항
-   ↓   - 사용자 컨텍스트 반영
-8. Claude API (Anthropic SDK)
-   ↓ POST /v1/messages
+8. Problem Analyzer
+   ↓ buildDifficultyContext(problem)
+   ↓ buildAlgorithmInfo(problem)
+   ↓ generateHintPoints(problem) ← 정적 패턴 매핑
+   ↓   - HINT_PATTERNS['dp'] 조회
+   ↓   - Level 1: "동적 프로그래밍" (패턴 인식)
+   ↓   - Level 2: "상태 정의와 점화식" (핵심 통찰)
+   ↓   - Level 3: "Bottom-up 구현" (전략 단계)
+   ↓ extractConstraints(problem)
+   ↓ generateGotchas(problem)
+   ↓ findSimilarProblems(problem) ← solved.ac API 재호출
+9. Problem Analyzer
+   ↓ 구조화된 JSON 데이터 생성
    ↓ {
-   ↓   model: "claude-3-5-sonnet-20241022",
-   ↓   max_tokens: 1024,
-   ↓   temperature: 0.7,
-   ↓   messages: [{ role: "user", content: "..." }]
+   ↓   problem: { problemId, titleKo, ... },
+   ↓   difficulty: { tier, level, emoji, ... },
+   ↓   algorithm: { primary_tags, typical_approaches, ... },
+   ↓   hint_points: [
+   ↓     { level: 1, type: "pattern", key: "동적 프로그래밍", ... },
+   ↓     { level: 2, type: "insight", key: "상태 정의", ... },
+   ↓     { level: 3, type: "strategy", steps: [...] }
+   ↓   ],
+   ↓   constraints: [...],
+   ↓   gotchas: [...],
+   ↓   similar_problems: [...]
    ↓ }
-9. Claude API 응답
-   ↓ { content: [{ type: "text", text: "DP 배열을..." }] }
-10. Hint Generator
-   ↓ 텍스트 추출 (마크다운 형식)
-11. Tool Handler
-   ↓ MCP TextContent 응답 구성: { type: 'text', text: hint }
-12. MCP Server
-   ↓ MCP 프로토콜 응답
-13. Claude AI
-   ↓ 자연어로 변환
+10. Tool Handler
+   ↓ JSON.stringify(analysis, null, 2)
+   ↓ MCP TextContent 응답: { type: 'text', text: JSON }
+11. MCP Server
+   ↓ MCP 프로토콜 응답 (< 500ms)
+12. Claude Code (LLM)
+   ↓ JSON 파싱
+   ↓ 사용자 요청에 따라 자연어 변환
+   ↓ 예: "레벨 2 힌트만 줘" → hint_points[1] 추출 후 자연어화
+13. Claude Code
+   ↓ 자연어로 변환된 메시지 생성
 14. 사용자
-   ← "DP 배열을 다음과 같이 정의해봅시다:
-      dp[i] = i번째 원소를 마지막으로 하는 최장 증가 부분 수열 길이..."
+   ← "이 문제는 동적 프로그래밍 문제입니다.
+      dp[i]의 의미를 명확히 정의하고, 이전 상태에서
+      현재 상태로 전이하는 점화식을 세워야 합니다.
+      예시: dp[i] = max(dp[j]) + 1 (j < i, arr[j] < arr[i])"
 ```
 
 **주요 컴포넌트**:
-- `get-hint.ts` (119 lines): MCP 도구 핸들러
-- `hint-generator.ts` (283 lines): 힌트 생성 서비스
-- Anthropic SDK: Claude API 통신
+- `analyze-problem.ts` (69 lines): MCP 도구 핸들러
+- `problem-analyzer.ts` (535 lines): 문제 분석 서비스
+- 정적 데이터: `HINT_PATTERNS` (알고리즘별 힌트 패턴)
 
-### 플로우 3: 복습 생성 (create_review) - ✅ Phase 3 완료
+**핵심 차이점**:
+- ❌ Claude API 호출 없음 → ⚡ 응답 시간 < 500ms
+- ✅ 결정적 JSON 출력 → 🧪 테스트 안정성
+- ✅ Zero Configuration → 🔧 API 키 불필요
+
+### 플로우 3: 복습 템플릿 생성 (generate_review_template) - ✅ Phase 3 Keyless 완료
 
 ```
 1. 사용자
    ↓ "1927번 문제 복습 문서 만들어줘"
-2. Claude AI (대화형)
-   ↓ 사용자에게 추가 정보 요청
-   ↓ "어떻게 해결하셨나요? 풀이 접근법을 알려주세요."
-3. 사용자
-   ↓ {
-   ↓   solution_approach: "Python의 heapq를 사용했어요...",
-   ↓   time_complexity: "O(N log N)",
-   ↓   key_insights: "힙 자료구조의 개념 이해..."
-   ↓ }
-4. MCP Server (create_review handler)
-   ↓ { problem_id: 1927, solution_approach: "...", ... }
-   ↓ CreateReviewInputSchema.parse(input)
-5. Tool Handler (create-review.ts)
-   ↓ getProblem(1927) 호출
+2. Claude Code
+   ↓ MCP 요청 생성
+3. MCP Server (generate_review_template handler)
+   ↓ { problem_id: 1927, user_notes: (optional) }
+   ↓ Zod 스키마 검증
+4. Tool Handler (generate-review-template.ts)
+   ↓ GenerateReviewTemplateInputSchema.parse(input)
+5. Review Template Generator Service (review-template-generator.ts)
+   ↓ generator.generate(1927, user_notes)
 6. API Client (solvedac-client)
    ↓ GET /problem/show?problemId=1927
 7. solved.ac API
    ↓ 문제 메타데이터 반환
-8. Review Generator Service (review-generator.ts)
-   ↓ validateInput(userInput) - solution_approach 최소 10자 확인
-   ↓ formatMetadata(problem) - 티어, 태그, 통계 포맷팅
-   ↓ 마크다운 템플릿 구성 시작
-9. Review Generator
-   ↓ getRelatedProblems(problem) 호출
-   ↓   - 첫 번째 태그: "priority_queue"
-   ↓   - 레벨 범위: 7-11 (9 ± 2)
-10. API Client
-   ↓ GET /search/problem?tag=priority_queue&level_min=7&level_max=11
-11. solved.ac API
-   ↓ 관련 문제 목록 반환
-12. Review Generator
-   ↓ 관련 문제 필터링 (현재 문제 제외)
-   ↓ 최대 5개 선택
-   ↓ 최종 마크다운 생성:
-   ↓   # [1927] 최소 힙
-   ↓   ## 문제 정보
-   ↓   (티어, 태그, 통계, BOJ 링크)
-   ↓   ## 풀이 접근법
-   ↓   (사용자 입력)
-   ↓   ## 시간/공간 복잡도
-   ↓   (사용자 입력 또는 "작성 예정")
-   ↓   ## 핵심 인사이트
-   ↓   (사용자 입력 또는 "작성 예정")
-   ↓   ## 관련 문제
-   ↓   (자동 생성)
-   ↓   ## 해결 날짜
-   ↓   (YYYY-MM-DD)
-13. Tool Handler
-   ↓ MCP TextContent 응답: { type: 'text', text: markdown }
-14. MCP Server
-   ↓ MCP 프로토콜 응답
-15. Claude AI
-   ↓ 마크다운 렌더링
-16. 사용자
+8. Review Template Generator
+   ↓ buildProblemSummary(problem)
+   ↓   - 문제 정보 (번호, 제목, 티어, 태그)
+   ↓   - BOJ 링크, 통계
+   ↓ generateMarkdownTemplate()
+   ↓   - 마크다운 템플릿 구성
+   ↓   - 빈 섹션 생성 (풀이, 복잡도, 인사이트 등)
+   ↓ findRelatedProblems(problem) ← solved.ac API 재호출
+   ↓   - 첫 번째 태그 기반
+   ↓   - ±2 티어 범위
+   ↓   - 최대 5개 추천
+9. Review Template Generator
+   ↓ createGuidePrompt()
+   ↓   - 복습 작성 가이드 프롬프트 생성
+   ↓   - Claude Code가 사용할 대화 프롬프트
+   ↓ 구조화된 JSON 데이터 생성:
+   ↓ {
+   ↓   template: "# [1927] 최소 힙\n\n## 문제 정보\n...",
+   ↓   problem_summary: { problemId, titleKo, tier, tags, ... },
+   ↓   related_problems: [...],
+   ↓   guide_prompt: "이 템플릿을 사용하여 복습 문서를 작성합니다..."
+   ↓ }
+10. Tool Handler
+   ↓ JSON.stringify(template, null, 2)
+   ↓ MCP TextContent 응답: { type: 'text', text: JSON }
+11. MCP Server
+   ↓ MCP 프로토콜 응답 (< 500ms)
+12. Claude Code (LLM)
+   ↓ JSON 파싱
+   ↓ guide_prompt를 활용하여 대화형으로 복습 문서 작성
+   ↓   - 사용자에게 풀이 접근법 질문
+   ↓   - 시간/공간 복잡도 질문
+   ↓   - 핵심 인사이트 질문
+   ↓   - template에 사용자 답변 채워넣기
+13. Claude Code
+   ↓ 완성된 마크다운 문서 생성
+14. 사용자
    ← 완성된 복습 문서 (마크다운)
+   ← "# [1927] 최소 힙
+      ## 문제 정보
+      ...
+      ## 풀이 접근법
+      (사용자 입력)
+      ## 관련 문제
+      - [11279] 최대 힙
+      - [11286] 절댓값 힙
+      ..."
 ```
 
 **주요 컴포넌트**:
-- `create-review.ts` (127 lines): MCP 도구 핸들러
-- `review-generator.ts` (153 lines): 복습 생성 서비스
-- 템플릿 기반 생성 (AI 불필요)
-- 관련 문제 자동 추천 (solved.ac API 활용)
+- `generate-review-template.ts` (69 lines): MCP 도구 핸들러
+- `review-template-generator.ts`: 템플릿 생성 서비스
+- 템플릿 + 가이드 프롬프트 제공
+
+**핵심 차이점**:
+- ❌ 완성된 문서 생성 대신 → ✅ 템플릿 + 가이드 프롬프트 제공
+- ✅ Claude Code가 대화형으로 복습 작성
+- ✅ Zero Configuration (API 키 불필요)
 
 ---
 
@@ -738,7 +846,7 @@ class Cache<T> {
 | API | Base URL | 인증 | 용도 |
 |-----|----------|------|------|
 | solved.ac | `https://solved.ac/api/v3` | 불필요 | 문제 메타데이터 조회 |
-| Claude API | `https://api.anthropic.com/v1` | API 키 | 힌트 생성 (선택) |
+| ~~Claude API~~ | ~~제거됨~~ | ~~API 키~~ | ~~Keyless 아키텍처로 제거~~ |
 
 ### 개발 도구
 - **빌드**: TypeScript Compiler (tsc)
@@ -843,31 +951,74 @@ throw new Error('HTTP 404: Not Found');
 throw new Error('해당 문제를 찾을 수 없습니다. 문제 번호를 확인해주세요.');
 ```
 
-### 6. 힌트 생성 방식
+### 6. Keyless 아키텍처 도입 (Phase 3)
 
-**결정**: LLM 기반 (템플릿 기반 아님)
+**결정**: MCP 서버는 결정적 데이터만 제공, 자연어 생성은 Claude Code 위임
 
 **이유**:
-- **맥락 인식**: 문제 태그, 난이도를 고려한 힌트
-- **자연스러움**: 템플릿보다 유연하고 자연스러운 표현
-- **확장성**: 사용자 컨텍스트 반영 가능
+- **사용자 경험**: API 키 설정 없이 즉시 사용 가능
+- **테스트 안정성**: LLM Mock 불필요, Snapshot 테스트 가능
+- **응답 속도**: < 500ms (LLM 호출 없음)
+- **비용 절감**: Claude API 비용 0원
+- **유지보수**: 힌트 패턴을 코드로 관리, 수정 용이
+
+**Before (LLM 기반)**:
+```
+User → Claude Code → MCP Server → Claude API → LLM 힌트 → User
+                                    (2-5초, API 비용)
+```
+
+**After (Keyless)**:
+```
+User → Claude Code → MCP Server → JSON 데이터 → Claude Code → User
+                    (< 500ms, 무료)
+```
 
 **트레이드오프**:
-- Claude API 비용 발생 → 프롬프트 최적화로 토큰 사용량 최소화
-- 응답 시간 증가 (2-5초) → 사용자에게 로딩 표시
+- ❌ LLM의 맥락적 유연성 감소 → ✅ 힌트 패턴 일관성 향상
+- ❌ 자연스러운 변형 감소 → ✅ 예측 가능한 출력
+- ❌ 실시간 적응성 감소 → ✅ 테스트 및 디버깅 용이
 
-### 7. 복습 생성 방식
+### 7. 정적 힌트 패턴 매핑
 
-**결정**: 템플릿 기반 (LLM 선택적 사용)
+**결정**: 알고리즘별 힌트 패턴을 `HINT_PATTERNS` 객체로 정의
+
+**구조**:
+```typescript
+const HINT_PATTERNS: Record<string, HintPattern> = {
+  dp: {
+    level1: { key: '동적 프로그래밍', detail: '...' },
+    level2: { key: '상태 정의와 점화식', detail: '...', example: '...' },
+    level3: { key: 'Bottom-up 구현', steps: [...] },
+  },
+  greedy: { ... },
+  graphs: { ... },
+  // 8개 알고리즘 패턴 정의
+};
+```
 
 **이유**:
-- **구조화**: 복습 문서는 정해진 포맷이 있음
-- **비용 효율**: LLM 없이도 충분히 유용
-- **빠른 응답**: 템플릿 기반은 즉시 생성 가능
+- **일관성**: 같은 알고리즘에 대해 항상 같은 구조의 힌트
+- **확장성**: 새 알고리즘 패턴 추가 용이
+- **테스트 가능**: Snapshot 테스트로 힌트 품질 검증
 
-**LLM 활용**:
-- 관련 문제 추천 설명 생성 (선택사항)
-- 복잡도 분석 제안 (선택사항)
+### 8. 복습 템플릿 + 가이드 프롬프트
+
+**결정**: 완성된 문서 대신 템플릿 + 가이드 프롬프트 제공
+
+**이유**:
+- **대화형 작성**: Claude Code가 사용자와 대화하며 복습 작성
+- **유연성**: 사용자 입력에 따라 동적으로 섹션 채워넣기
+- **Zero Configuration**: API 키 불필요
+
+**출력 구조**:
+```json
+{
+  "template": "# [1927] 최소 힙\n\n## 풀이 접근법\n...",
+  "guide_prompt": "사용자에게 풀이 접근법을 질문하세요...",
+  "related_problems": [...]
+}
+```
 
 ---
 

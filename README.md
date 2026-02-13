@@ -108,6 +108,37 @@ cote-mcp-server/
 | 21-25 | Diamond V-I | 🔵 |
 | 26-30 | Ruby V-I | 🔴 |
 
+### ✨ 직관적인 티어 입력 (NEW)
+
+문제 검색 시 **숫자(1-30)** 또는 **티어 문자열** 형식을 모두 지원합니다:
+
+```typescript
+// 방법 1: 숫자 형식
+{ level_min: 8, level_max: 15 }
+
+// 방법 2: 한글 티어명 + 숫자
+{ level_min: "실버 3", level_max: "골드 1" }
+
+// 방법 3: 영문 티어명 + 로마 숫자
+{ level_min: "Silver III", level_max: "Gold I" }
+
+// 방법 4: 축약형
+{ level_min: "실 3", level_max: "골 1" }
+
+// 방법 5: 혼용
+{ level_min: 8, level_max: "골드 1" }
+```
+
+**지원하는 티어명**:
+- 한글: 브론즈/실버/골드/플래티넘/다이아몬드/루비
+- 축약형: 브/실/골/플래/플/다이아/다/루
+- 영문: Bronze/Silver/Gold/Platinum/Diamond/Ruby
+- 대소문자 무관
+
+**등급 표기**:
+- 숫자: 1, 2, 3, 4, 5 (5가 가장 낮음)
+- 로마 숫자: I, II, III, IV, V (V가 가장 낮음)
+
 ## 문서
 
 - [테스트 스펙](docs/test-spec-phase1.md)

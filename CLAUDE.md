@@ -12,17 +12,24 @@
 
 ## 핵심 기능
 
-### 1. 필수 기능 ✅
-- **analyze_problem**: 문제 분석 및 구조화된 힌트 데이터 제공 (Phase 3 완료)
-- **generate_review_template**: 복습 템플릿 및 가이드 프롬프트 생성 (Phase 3 완료)
+### 1. 필수 기능 (Phase 3 완료) ✅
+- **analyze_problem**: 문제 분석 및 구조화된 힌트 데이터 제공
+  - 3단계 힌트 포인트, 난이도 컨텍스트, 알고리즘 정보
+  - **Keyless**: 결정적 데이터만 제공 (< 500ms), LLM 호출 없음
 
-### 2. 부가 기능 ✅
-- **search_problems**: 필터 기반 문제 검색 (Phase 1-2 완료)
-- **get_problem**: 문제 상세 정보 조회 (Phase 1-2 완료)
-- **search_tags**: 알고리즘 태그 검색 (Phase 1-2 완료)
+- **generate_review_template**: 복습 템플릿 및 가이드 프롬프트 생성
+  - 마크다운 템플릿, 문제 분석 정보, 관련 문제 추천
+  - **Keyless**: 템플릿 + 가이드만 제공, Claude Code가 대화형으로 활용
 
-### 3. 향후 계획
-- **analyze_user**: 백준 ID로 전체 풀이 이력 분석 → `{boj_id}_learning_report.md` (Phase 4)
+### 2. 부가 기능 (Phase 1-2 완료) ✅
+- **search_problems**: 필터 기반 문제 검색
+- **get_problem**: 문제 상세 정보 조회
+- **search_tags**: 알고리즘 태그 검색
+
+### 3. 향후 계획 (Phase 4+)
+- **analyze_user**: 백준 ID로 전체 풀이 이력 분석
+- 성능 최적화 (캐싱, rate limiting)
+- 로깅 및 모니터링
 
 ---
 
@@ -30,10 +37,11 @@
 
 - **MCP SDK**: `@modelcontextprotocol/sdk` v1.26.0
 - **TypeScript**: 5.9.3
-- **Node.js**: ES2022
-- **Zod**: 스키마 검증
-- **solved.ac API**: BOJ 문제 데이터
-- **vitest**: 테스팅
+- **Node.js**: ES2022 (>=18.0.0)
+- **Zod**: 4.3.6 (스키마 검증)
+- **solved.ac API**: BOJ 문제 메타데이터 (무료, 인증 불필요)
+- **vitest**: 4.0.18 (테스팅)
+- ~~**@anthropic-ai/sdk**~~: 제거됨 (Keyless 아키텍처)
 
 ---
 

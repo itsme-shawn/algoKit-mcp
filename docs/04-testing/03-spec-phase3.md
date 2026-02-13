@@ -1,10 +1,10 @@
-# Phase 3 테스트 스펙: 힌트 및 복습 생성 도구
+# Phase 3 테스트 스펙: 문제 분석 및 복습 템플릿 생성 (Keyless)
 
 **프로젝트명**: cote-mcp: BOJ 학습 도우미 MCP Server
-**버전**: 1.0
+**버전**: 2.0 (Keyless Architecture)
 **작성일**: 2026-02-13
-**마지막 업데이트**: 2026-02-13
-**작성자**: qa-testing-agent
+**마지막 업데이트**: 2026-02-13 (Keyless 아키텍처 반영)
+**작성자**: technical-writer
 
 ---
 
@@ -22,28 +22,39 @@
 
 ## 테스트 개요
 
-### Phase 3 목표
-Phase 3는 **힌트 생성**과 **복습 문서 생성** 기능을 구현합니다. LLM(Claude API)과의 통합이 핵심입니다.
+### Phase 3 목표 (Keyless Architecture)
+Phase 3는 **문제 분석**과 **복습 템플릿 생성** 기능을 구현합니다. **LLM API 제거, 결정적 데이터 제공이 핵심**입니다.
+
+### Keyless 아키텍처 변경사항
+| 측면 | Before (LLM 기반) | After (Keyless) |
+|------|-------------------|-----------------|
+| **서비스** | hint-generator.ts (LLM) | problem-analyzer.ts (정적 패턴) |
+| **서비스** | review-generator.ts | review-template-generator.ts |
+| **도구** | get-hint.ts | analyze-problem.ts |
+| **도구** | create-review.ts | generate-review-template.ts |
+| **출력** | 자연어 힌트 (변동) | JSON 데이터 (결정적) |
+| **테스트** | LLM Mock 필요 | Snapshot 테스트 |
 
 ### 테스트 범위
 - **서비스 레이어**:
-  - `src/services/hint-generator.ts` (힌트 생성 로직)
-  - `src/services/review-generator.ts` (복습 문서 생성)
+  - `src/services/problem-analyzer.ts` (문제 분석 및 힌트 포인트 생성)
+  - `src/services/review-template-generator.ts` (복습 템플릿 생성)
 - **도구 레이어**:
-  - `src/tools/get-hint.ts` (힌트 도구 MCP 핸들러)
-  - `src/tools/create-review.ts` (복습 도구 MCP 핸들러)
+  - `src/tools/analyze-problem.ts` (분석 도구 MCP 핸들러)
+  - `src/tools/generate-review-template.ts` (템플릿 도구 MCP 핸들러)
 
-### 테스팅 전략
+### 테스팅 전략 (Keyless)
 - **TDD Red-Green-Refactor** 사이클 준수
-- **LLM API 모킹**: 실제 API 호출 최소화, 비용 절감
-- **프롬프트 품질 검증**: 다양한 문제 유형에 대한 힌트 품질
-- **템플릿 기반 테스트**: 복습 문서 포맷 일관성
+- **결정적 출력 검증**: Snapshot 테스트 활용
+- **JSON 스키마 검증**: Zod 스키마로 출력 구조 확인
+- **힌트 패턴 정합성**: HINT_PATTERNS 매핑 테스트
+- **응답 시간 검증**: < 500ms 목표
 
 ### 품질 목표
 - **코드 커버리지**: 85% 이상 (서비스 레이어), 90% 이상 (도구 레이어)
 - **테스트 통과율**: 100%
-- **프롬프트 검증**: 3단계 힌트가 명확히 구분됨
-- **템플릿 검증**: 모든 필수 필드 포함
+- **응답 시간**: < 500ms (LLM 호출 없음)
+- **결정적 출력**: Snapshot 테스트로 일관성 보장
 
 ---
 
@@ -1272,65 +1283,109 @@ expect(result.text).toContain('['); // 링크
 
 ---
 
-## Mock 전략
+## Mock 전략 (Keyless)
 
-### 1. Claude API Mock
+### Keyless 아키텍처의 테스트 장점
+- ❌ **LLM Mock 불필요**: Claude API 제거로 복잡한 Mock 제거
+- ✅ **결정적 출력**: 같은 입력 → 같은 JSON 출력
+- ✅ **Snapshot 테스트**: 출력 구조를 Snapshot으로 검증
+- ✅ **빠른 실행**: API 호출 없이 밀리초 단위
 
-**파일**: `tests/__mocks__/claude-api.ts`
-
-```typescript
-export const mockClaudeAPI = {
-  messages: {
-    create: vi.fn().mockResolvedValue({
-      content: [
-        {
-          type: 'text',
-          text: '이 문제는 우선순위 큐를 사용하는 자료구조 문제입니다...'
-        }
-      ]
-    })
-  }
-};
-```
-
-**사용 시나리오**:
-- 정상 응답
-- 타임아웃
-- 401, 429, 500 에러
-- 긴 응답 (5000자+)
-
----
-
-### 2. solved.ac API Mock (재사용)
+### 1. solved.ac API Mock (재사용)
 
 **기존 Mock 활용**:
 - `tests/__mocks__/solved-ac-responses.ts`의 Mock 데이터 재사용
 - `getProblem()` Mock: Phase 2에서 이미 테스트됨
 - `searchProblems()` Mock: 관련 문제 추천용
 
----
-
-### 3. HintGenerator Mock
-
-**파일**: `tests/__mocks__/hint-generator.ts`
-
 ```typescript
-export const mockHintGenerator = {
-  generateHint: vi.fn().mockResolvedValue('Mock 힌트 내용'),
-  buildPrompt: vi.fn().mockReturnValue('Mock 프롬프트')
+export const mockProblem1927 = {
+  problemId: 1927,
+  titleKo: '최소 힙',
+  level: 10, // Silver II
+  tags: [
+    { key: 'data_structures', displayNames: [{ language: 'ko', name: '자료 구조' }] },
+    { key: 'priority_queue', displayNames: [{ language: 'ko', name: '우선순위 큐' }] }
+  ],
+  acceptedUserCount: 50000,
+  averageTries: 2.3,
 };
 ```
 
 ---
 
-### 4. ReviewGenerator Mock
+### 2. ProblemAnalyzer (결정적 출력)
 
-**파일**: `tests/__mocks__/review-generator.ts`
-
+**Mock 불필요**: 정적 데이터 기반이므로 실제 서비스 사용
 ```typescript
-export const mockReviewGenerator = {
-  generate: vi.fn().mockResolvedValue('# Mock 복습 문서\n\n...')
-};
+import { ProblemAnalyzer } from '../services/problem-analyzer.js';
+import { mockSolvedAcClient } from './__mocks__/solved-ac-client.js';
+
+const analyzer = new ProblemAnalyzer(mockSolvedAcClient);
+
+test('DP 문제 분석', async () => {
+  const result = await analyzer.analyze(11053);
+
+  // Snapshot 테스트
+  expect(result).toMatchSnapshot();
+
+  // 구조 검증
+  expect(result.hint_points).toHaveLength(3);
+  expect(result.hint_points[0].level).toBe(1);
+  expect(result.hint_points[0].key).toBe('동적 프로그래밍');
+});
+```
+
+---
+
+### 3. ReviewTemplateGenerator (결정적 출력)
+
+**Mock 불필요**: 템플릿 생성 로직이므로 실제 서비스 사용
+```typescript
+import { ReviewTemplateGenerator } from '../services/review-template-generator.js';
+
+const generator = new ReviewTemplateGenerator(mockSolvedAcClient);
+
+test('복습 템플릿 생성', async () => {
+  const result = await generator.generate(1927);
+
+  // Snapshot 테스트
+  expect(result).toMatchSnapshot();
+
+  // 필드 존재 확인
+  expect(result.template).toContain('# [1927] 최소 힙');
+  expect(result.problem_summary.problemId).toBe(1927);
+  expect(result.guide_prompt).toContain('사용자에게');
+});
+```
+
+---
+
+### 4. Snapshot 테스트 활용
+
+**장점**:
+- 출력 구조 변경 감지
+- 리팩토링 안정성
+- 회귀 테스트 자동화
+
+**예시**:
+```typescript
+test('analyze_problem: DP 문제 분석 (snapshot)', async () => {
+  mockSolvedAcClient.getProblem.mockResolvedValue(mockProblem11053);
+
+  const analyzer = new ProblemAnalyzer(mockSolvedAcClient);
+  const result = await analyzer.analyze(11053);
+
+  // 전체 출력 구조를 스냅샷으로 저장
+  expect(result).toMatchSnapshot();
+});
+```
+
+**Snapshot 파일 경로**:
+```
+tests/__snapshots__/
+├── problem-analyzer.test.ts.snap
+└── review-template-generator.test.ts.snap
 ```
 
 ---
