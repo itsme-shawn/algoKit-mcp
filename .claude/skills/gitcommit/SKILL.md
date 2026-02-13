@@ -100,7 +100,21 @@ git log --oneline -5
 
 ### 2단계: 커밋 계획 파일 생성
 
-`stash/commit/YYYYMMDD_to_commit.md` 파일 생성:
+**⚠️ 중요**: 반드시 프로젝트 루트의 `stash/commit/` 디렉토리에 파일을 생성해야 합니다.
+
+**절대 경로 사용**:
+- ✅ 올바른 경로: `<프로젝트_루트>/stash/commit/YYYYMMDD_<num>_commit_plan.md`
+- ❌ 잘못된 경로: `/tmp/commit_plan.md` (절대 사용 금지)
+
+**파일 생성 방법**:
+```bash
+# Bash 명령어 사용
+cat > stash/commit/YYYYMMDD_<num>_commit_plan.md << 'ENDOFFILE'
+[내용]
+ENDOFFILE
+```
+
+`stash/commit/YYYYMMDD_<num>_commit_plan.md` 파일 생성:
 
 ```markdown
 # 커밋 계획 - YYYY-MM-DD
@@ -214,10 +228,12 @@ git log --oneline -2
 
 ### ✅ 반드시 지킬 것
 
-1. **커밋 계획 파일 생성**: `stash/commit/YYYYMMDD_to_commit.md`
+1. **커밋 계획 파일 생성**: `stash/commit/YYYYMMDD_<num>_commit_plan.md`
+   - ⚠️ **절대 `/tmp/`에 생성 금지** - 반드시 프로젝트 루트의 `stash/commit/` 사용
+   - 예: `stash/commit/20260213_5_commit_plan.md`
 2. **사용자 승인 필수**: 커밋 전 명령어와 내용 제시하고 승인 받기
 3. **HEREDOC 사용**: 멀티라인 커밋 메시지는 반드시 HEREDOC으로 전달
-4. **커밋계획을 수정했다면 수정버전을 반영해서 커밋수행**: to_commit.md 에 수정을 했을 때, 수정한 버전으로 커밋
+4. **커밋계획을 수정했다면 수정버전을 반영해서 커밋수행**: 커밋 계획 파일을 수정했을 때, 수정한 버전으로 커밋
 
 ### ❌ 절대 하지 말 것
 
