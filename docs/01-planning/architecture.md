@@ -1,8 +1,8 @@
 # 시스템 아키텍처 문서
 
 **BOJ 학습 도우미 MCP Server**
-**버전**: 1.0
-**마지막 업데이트**: 2026-02-13
+**버전**: 1.1
+**마지막 업데이트**: 2026-02-13 (Phase 3 구현 완료)
 
 ---
 
@@ -42,7 +42,7 @@ BOJ 학습 도우미는 **MCP(Model Context Protocol)** 기반 서버로, Claude
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                        사용자                                │
-│                   (Claude Desktop UI)                        │
+│          (Claude Desktop, ChatGPT, Claude Code, Codex...)   │
 └────────────────────────┬────────────────────────────────────┘
                          │
                          │ 자연어 대화
@@ -70,11 +70,11 @@ BOJ 학습 도우미는 **MCP(Model Context Protocol)** 기반 서버로, Claude
 │               │                                              │
 │  ┌────────────▼──────────┐  ┌─────────────────────────┐    │
 │  │    Tool Handlers      │  │   Service Layer         │    │
-│  │  - search-problems.ts │  │  - hint-generator.ts    │    │
-│  │  - get-problem.ts     │  │  - review-generator.ts  │    │
+│  │  - search-problems.ts │  │  ✅ hint-generator.ts   │    │
+│  │  - get-problem.ts     │  │  ✅ review-generator.ts │    │
 │  │  - search-tags.ts     │  │                         │    │
-│  │  - get-hint.ts        │  │                         │    │
-│  │  - create-review.ts   │  │                         │    │
+│  │  ✅ get-hint.ts       │  │                         │    │
+│  │  ✅ create-review.ts  │  │                         │    │
 │  └────────────┬──────────┘  └──────────┬──────────────┘    │
 │               │                        │                    │
 │  ┌────────────▼────────────────────────▼──────────────┐    │
@@ -98,10 +98,12 @@ BOJ 학습 도우미는 **MCP(Model Context Protocol)** 기반 서버로, Claude
         │             │             │
         ▼             ▼             ▼
 ┌─────────────┐ ┌──────────┐ ┌──────────────┐
-│ solved.ac   │ │ Claude   │ │  File        │
-│ API         │ │ API      │ │  System      │
+│ solved.ac   │ │ ✅Claude │ │  (향후)      │
+│ API         │ │   API    │ │  File System │
 │             │ │ (hints)  │ │  (reviews)   │
 └─────────────┘ └──────────┘ └──────────────┘
+
+** ✅ = Phase 3 구현 완료
 ```
 
 ### 레이어 구조
@@ -286,86 +288,210 @@ export interface Tag {
 
 ### 4. Service Layer (`src/services/`)
 
-#### `hint-generator.ts`
-**역할**: AI 기반 힌트 생성 로직
+#### `hint-generator.ts` (✅ Phase 3 완료)
+**역할**: Claude API 기반 힌트 생성 로직
+
+**구현 상태**: 완료 (283 lines)
 
 **아키텍처**:
 ```typescript
+import Anthropic from '@anthropic-ai/sdk';
+
 class HintGenerator {
-  private llmClient: ClaudeClient;
+  private client: Anthropic | null;
+  private apiKey: string | undefined;
+  private model: string;
+  private maxTokens: number;
+  private temperature: number;
+  private timeout: number;
 
-  // 3단계 힌트 생성
-  async generateHint(
-    problem: ProblemDetail,
-    level: 1 | 2 | 3,
-    userContext?: string
-  ): Promise<string> {
-    // 1. 프롬프트 템플릿 선택
-    const template = this.getPromptTemplate(level);
+  constructor(client?: Anthropic) {
+    // 환경 변수에서 설정 로드
+    this.apiKey = process.env.ANTHROPIC_API_KEY;
+    this.model = process.env.CLAUDE_MODEL || 'claude-3-5-sonnet-20241022';
+    this.maxTokens = parseInt(process.env.CLAUDE_MAX_TOKENS || '1024', 10);
+    this.temperature = parseFloat(process.env.CLAUDE_TEMPERATURE || '0.7');
+    this.timeout = parseInt(process.env.CLAUDE_TIMEOUT || '30000', 10);
 
-    // 2. 문제 메타데이터로 프롬프트 구성
-    const prompt = this.buildPrompt(template, problem, userContext);
-
-    // 3. LLM API 호출
-    const hint = await this.llmClient.complete(prompt);
-
-    // 4. 마크다운 포맷팅
-    return this.formatHint(hint, level);
+    // 클라이언트 초기화
+    if (client) {
+      this.client = client;
+    } else if (this.apiKey) {
+      this.initializeClient();
+    }
   }
 
-  // 레벨별 프롬프트 템플릿
-  private getPromptTemplate(level: number): string {
-    switch (level) {
-      case 1: return LEVEL_1_TEMPLATE;
-      case 2: return LEVEL_2_TEMPLATE;
-      case 3: return LEVEL_3_TEMPLATE;
+  // 힌트 생성
+  async generateHint(
+    problem: Problem,
+    hintLevel: number,
+    userContext?: string
+  ): Promise<string> {
+    // 1. 입력 검증
+    if (!Number.isInteger(hintLevel) || hintLevel < 1 || hintLevel > 3) {
+      throw new InvalidInputError('힌트 레벨은 1-3 범위여야 합니다');
     }
+
+    // 2. API 키 확인
+    if (!this.isConfigured()) {
+      throw new ConfigurationError('API 키가 설정되지 않았습니다');
+    }
+
+    // 3. 프롬프트 생성
+    const prompt = this.buildPrompt(problem, hintLevel, userContext);
+
+    // 4. Claude API 호출 (타임아웃 포함)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+
+    const response = await this.client!.messages.create(
+      {
+        model: this.model,
+        max_tokens: this.maxTokens,
+        temperature: this.temperature,
+        messages: [{ role: 'user', content: prompt }]
+      },
+      { signal: controller.signal }
+    );
+
+    clearTimeout(timeoutId);
+
+    // 5. 텍스트 추출
+    const textContent = response.content.find(c => c.type === 'text');
+    return textContent?.text || '';
+  }
+
+  // 프롬프트 구성 (public - 테스트 가능)
+  buildPrompt(
+    problem: Problem,
+    hintLevel: number,
+    userContext?: string
+  ): string {
+    // 문제 메타데이터 포함
+    // 레벨별 프롬프트 차별화
+    // 난이도별 용어 조정
+    // 사용자 컨텍스트 반영
   }
 }
 ```
 
 **프롬프트 전략**:
-- **Level 1**: 문제 패턴 인식 프롬프트
-- **Level 2**: 핵심 통찰 제공 프롬프트
-- **Level 3**: 상세 알고리즘 단계 프롬프트
+- **Level 1**: 문제 패턴 인식 (3-5문장, 카테고리 중심)
+- **Level 2**: 핵심 통찰 제공 (7-10문장, 핵심 아이디어 + 접근법)
+- **Level 3**: 상세 알고리즘 단계 (단계별, 시간/공간 복잡도 포함)
+- **난이도 조정**: Bronze (초보자 용어), Platinum (고급 기법)
+- **사용자 컨텍스트**: 제공 시 맞춤형 피드백
 
-#### `review-generator.ts`
+**에러 처리**:
+- `ConfigurationError`: API 키 미설정
+- `InvalidInputError`: 잘못된 힌트 레벨
+- `ClaudeAPIError`: Claude API 오류 (401, 429, 500)
+- `TimeoutError`: 응답 시간 초과 (30초)
+
+#### `review-generator.ts` (✅ Phase 3 완료)
 **역할**: 복습 문서 생성 (템플릿 기반)
+
+**구현 상태**: 완료 (153 lines)
 
 **아키텍처**:
 ```typescript
 class ReviewGenerator {
-  // 복습 문서 생성
-  async generateReview(
-    problem: ProblemDetail,
-    userInput: ReviewInput
-  ): Promise<string> {
-    // 1. 마크다운 템플릿 로드
-    const template = this.loadTemplate();
+  private searchProblems?: (params: SearchParams) => Promise<{ items: Problem[] }>;
 
-    // 2. 문제 메타데이터 채우기
-    const content = this.fillMetadata(template, problem);
-
-    // 3. 사용자 입력 채우기
-    const filled = this.fillUserInput(content, userInput);
-
-    // 4. 관련 문제 추천
-    const relatedProblems = await this.findRelatedProblems(problem);
-    const final = this.addRelatedProblems(filled, relatedProblems);
-
-    return final;
+  constructor(searchProblems?: (...) => ...) {
+    this.searchProblems = searchProblems;
   }
 
-  // 관련 문제 찾기 (같은 태그 기반)
-  private async findRelatedProblems(
-    problem: ProblemDetail
-  ): Promise<Problem[]> {
-    // 문제의 태그로 유사 문제 검색
-    // 비슷한 난이도 필터링
-    // 상위 3-5개 반환
+  // 복습 문서 생성
+  async generate(
+    problem: Problem,
+    userInput: ReviewInput
+  ): Promise<string> {
+    // 1. 입력 검증
+    this.validateInput(userInput);  // solution_approach 필수 확인
+
+    // 2. 현재 날짜 가져오기
+    const today = new Date().toISOString().split('T')[0];
+
+    // 3. 관련 문제 추천
+    const relatedProblems = await this.getRelatedProblems(problem);
+
+    // 4. 마크다운 템플릿 구성
+    let markdown = `# ${problem.problemId}. ${problem.titleKo}\n\n`;
+    markdown += `## 문제 정보\n\n`;
+    markdown += this.formatMetadata(problem);
+    markdown += `\n## 풀이 접근법\n\n${userInput.solution_approach}\n\n`;
+    // ... (시간/공간 복잡도, 인사이트, 어려웠던 점)
+    markdown += `## 관련 문제\n\n${relatedProblems}\n\n`;
+    markdown += `## 해결 날짜\n\n해결 날짜: ${today}\n`;
+
+    return markdown;
+  }
+
+  // 관련 문제 찾기 (private)
+  private async getRelatedProblems(problem: Problem): Promise<string> {
+    if (problem.tags.length === 0) {
+      return '관련 문제를 추천할 수 없습니다 (태그 정보 없음)';
+    }
+
+    if (!this.searchProblems) {
+      return '관련 문제를 찾을 수 없습니다';
+    }
+
+    try {
+      const firstTag = problem.tags[0].key;
+      const levelMin = Math.max(1, problem.level - 2);
+      const levelMax = Math.min(30, problem.level + 2);
+
+      const result = await this.searchProblems({
+        tag: firstTag,
+        level_min: levelMin,
+        level_max: levelMax
+      });
+
+      // 최대 5개, 현재 문제 제외
+      const recommendations = result.items
+        .slice(0, 5)
+        .filter(p => p.problemId !== problem.problemId)
+        .map(p => `- [${p.problemId}. ${p.titleKo}](https://www.acmicpc.net/problem/${p.problemId}) (${getTierBadge(p.level)})`)
+        .join('\n');
+
+      return recommendations || '관련 문제를 찾을 수 없습니다';
+    } catch (error) {
+      return '관련 문제를 찾을 수 없습니다';
+    }
+  }
+
+  // 메타데이터 포맷팅
+  private formatMetadata(problem: Problem): string {
+    const tierBadge = getTierBadge(problem.level);
+    const tags = problem.tags
+      .map(tag => tag.displayNames.find(dn => dn.language === 'ko')?.name || tag.key)
+      .join(', ');
+    const acceptedCount = problem.acceptedUserCount.toLocaleString('ko-KR');
+    const avgTries = problem.averageTries.toFixed(1);
+
+    return `**티어**: ${tierBadge}\n` +
+           `**태그**: ${tags}\n` +
+           `**해결한 사람**: ${acceptedCount}명\n` +
+           `**평균 시도**: ${avgTries}회\n` +
+           `**문제 링크**: [BOJ ${problem.problemId}](https://www.acmicpc.net/problem/${problem.problemId})\n`;
   }
 }
 ```
+
+**입력 검증**:
+- `solution_approach`: 필수, 최소 10자
+- 기타 필드: 선택사항
+
+**관련 문제 추천 로직**:
+- 첫 번째 태그 기반 검색
+- ±2 티어 범위
+- 최대 5개 추천
+- 현재 문제 제외
+
+**에러 처리**:
+- `ValidationError`: 입력 검증 실패 (solution_approach 누락 또는 짧음)
 
 ---
 
@@ -469,7 +595,7 @@ class Cache<T> {
    ← "20개의 Gold DP 문제를 찾았습니다..."
 ```
 
-### 플로우 2: 힌트 생성 (get_hint)
+### 플로우 2: 힌트 생성 (get_hint) - ✅ Phase 3 완료
 
 ```
 1. 사용자
@@ -477,47 +603,117 @@ class Cache<T> {
 2. Claude AI
    ↓ MCP 요청
 3. MCP Server (get_hint handler)
-   ↓ { problem_id: 11053, hint_level: 2 }
-4. API Client
+   ↓ { problem_id: 11053, hint_level: 2, user_context: "..." }
+   ↓ Zod 스키마 검증
+4. Tool Handler (get-hint.ts)
+   ↓ GetHintInputSchema.parse(input)
+5. API Client (solvedac-client)
    ↓ GET /problem/show?problemId=11053
-5. solved.ac API
-   ↓ 문제 메타데이터 반환
-6. Hint Generator Service
-   ↓ 프롬프트 구성 (태그, 난이도 포함)
-7. Claude API (LLM)
-   ↓ 힌트 생성
-8. Hint Generator
-   ↓ 마크다운 포맷팅
-9. Tool Handler
-   ↓ MCP 응답 구성
-10. 사용자
-   ← "DP 배열을 다음과 같이 정의..."
+6. solved.ac API
+   ↓ 문제 메타데이터 반환 (JSON)
+7. Hint Generator Service (hint-generator.ts)
+   ↓ buildPrompt(problem, 2, userContext)
+   ↓ 프롬프트 구성:
+   ↓   - 문제 제목: "가장 긴 증가하는 부분 수열"
+   ↓   - 난이도: Silver II
+   ↓   - 태그: DP
+   ↓   - 레벨 2 지시사항
+   ↓   - 사용자 컨텍스트 반영
+8. Claude API (Anthropic SDK)
+   ↓ POST /v1/messages
+   ↓ {
+   ↓   model: "claude-3-5-sonnet-20241022",
+   ↓   max_tokens: 1024,
+   ↓   temperature: 0.7,
+   ↓   messages: [{ role: "user", content: "..." }]
+   ↓ }
+9. Claude API 응답
+   ↓ { content: [{ type: "text", text: "DP 배열을..." }] }
+10. Hint Generator
+   ↓ 텍스트 추출 (마크다운 형식)
+11. Tool Handler
+   ↓ MCP TextContent 응답 구성: { type: 'text', text: hint }
+12. MCP Server
+   ↓ MCP 프로토콜 응답
+13. Claude AI
+   ↓ 자연어로 변환
+14. 사용자
+   ← "DP 배열을 다음과 같이 정의해봅시다:
+      dp[i] = i번째 원소를 마지막으로 하는 최장 증가 부분 수열 길이..."
 ```
 
-### 플로우 3: 복습 생성 (create_review)
+**주요 컴포넌트**:
+- `get-hint.ts` (119 lines): MCP 도구 핸들러
+- `hint-generator.ts` (283 lines): 힌트 생성 서비스
+- Anthropic SDK: Claude API 통신
+
+### 플로우 3: 복습 생성 (create_review) - ✅ Phase 3 완료
 
 ```
 1. 사용자
    ↓ "1927번 문제 복습 문서 만들어줘"
 2. Claude AI (대화형)
    ↓ 사용자에게 추가 정보 요청
+   ↓ "어떻게 해결하셨나요? 풀이 접근법을 알려주세요."
 3. 사용자
-   ↓ 풀이 접근법, 복잡도 등 입력
+   ↓ {
+   ↓   solution_approach: "Python의 heapq를 사용했어요...",
+   ↓   time_complexity: "O(N log N)",
+   ↓   key_insights: "힙 자료구조의 개념 이해..."
+   ↓ }
 4. MCP Server (create_review handler)
    ↓ { problem_id: 1927, solution_approach: "...", ... }
-5. API Client
+   ↓ CreateReviewInputSchema.parse(input)
+5. Tool Handler (create-review.ts)
+   ↓ getProblem(1927) 호출
+6. API Client (solvedac-client)
    ↓ GET /problem/show?problemId=1927
-6. Review Generator Service
-   ↓ 템플릿 로드 및 채우기
-7. Review Generator
-   ↓ 관련 문제 검색 (같은 태그)
-8. API Client
-   ↓ GET /search/problem?query=priority_queue
+7. solved.ac API
+   ↓ 문제 메타데이터 반환
+8. Review Generator Service (review-generator.ts)
+   ↓ validateInput(userInput) - solution_approach 최소 10자 확인
+   ↓ formatMetadata(problem) - 티어, 태그, 통계 포맷팅
+   ↓ 마크다운 템플릿 구성 시작
 9. Review Generator
-   ↓ 최종 마크다운 생성
-10. 사용자
-   ← 마크다운 문서 반환
+   ↓ getRelatedProblems(problem) 호출
+   ↓   - 첫 번째 태그: "priority_queue"
+   ↓   - 레벨 범위: 7-11 (9 ± 2)
+10. API Client
+   ↓ GET /search/problem?tag=priority_queue&level_min=7&level_max=11
+11. solved.ac API
+   ↓ 관련 문제 목록 반환
+12. Review Generator
+   ↓ 관련 문제 필터링 (현재 문제 제외)
+   ↓ 최대 5개 선택
+   ↓ 최종 마크다운 생성:
+   ↓   # [1927] 최소 힙
+   ↓   ## 문제 정보
+   ↓   (티어, 태그, 통계, BOJ 링크)
+   ↓   ## 풀이 접근법
+   ↓   (사용자 입력)
+   ↓   ## 시간/공간 복잡도
+   ↓   (사용자 입력 또는 "작성 예정")
+   ↓   ## 핵심 인사이트
+   ↓   (사용자 입력 또는 "작성 예정")
+   ↓   ## 관련 문제
+   ↓   (자동 생성)
+   ↓   ## 해결 날짜
+   ↓   (YYYY-MM-DD)
+13. Tool Handler
+   ↓ MCP TextContent 응답: { type: 'text', text: markdown }
+14. MCP Server
+   ↓ MCP 프로토콜 응답
+15. Claude AI
+   ↓ 마크다운 렌더링
+16. 사용자
+   ← 완성된 복습 문서 (마크다운)
 ```
+
+**주요 컴포넌트**:
+- `create-review.ts` (127 lines): MCP 도구 핸들러
+- `review-generator.ts` (153 lines): 복습 생성 서비스
+- 템플릿 기반 생성 (AI 불필요)
+- 관련 문제 자동 추천 (solved.ac API 활용)
 
 ---
 

@@ -1,8 +1,8 @@
 # MCP 도구 레퍼런스
 
 **cote-mcp: BOJ 학습 도우미 MCP Server**
-**버전**: 1.0
-**마지막 업데이트**: 2026-02-13
+**버전**: 1.1
+**마지막 업데이트**: 2026-02-13 (Phase 3 구현 완료)
 
 > **참고**: MCP 도구 이름은 일반 이름을 사용합니다. 향후 슬래시 커맨드(/스킬)를 만들 때 `cote:` prefix를 사용할 예정입니다.
 
@@ -13,23 +13,25 @@
 2. [search_problems](#search_problems)
 3. [get_problem](#get_problem)
 4. [search_tags](#search_tags)
-5. [get_hint](#get_hint)
-6. [create_review](#create_review)
+5. [analyze_problem](#analyze_problem) ⭐ NEW
+6. [generate_review_template](#generate_review_template) ⭐ NEW
 7. [사용 예시 시나리오](#사용-예시-시나리오)
 
 ---
 
 ## 도구 개요
 
-cote-mcp는 5개의 MCP 도구를 제공합니다:
+cote-mcp는 7개의 MCP 도구를 제공합니다:
 
-| MCP 도구 | 향후 슬래시 커맨드 | 카테고리 | 목적 |
-|---------|------------------|---------|------|
-| `search_problems` | `/cote:search` | 🔍 검색 | 필터를 사용한 문제 검색 |
-| `get_problem` | `/cote:problem` | 📄 조회 | 특정 문제의 상세 정보 조회 |
-| `search_tags` | `/cote:tags` | 🏷️ 검색 | 알고리즘 태그 검색 |
-| `get_hint` | `/cote:hint` | 💡 학습 | 단계별 힌트 생성 (AI 기반) |
-| `create_review` | `/cote:review` | 📝 복습 | 문제 복습 문서 생성 |
+| MCP 도구 | 향후 슬래시 커맨드 | 카테고리 | 목적 | 구현 상태 |
+|---------|------------------|---------|------|---------|
+| `search_problems` | `/cote:search` | 🔍 검색 | 필터를 사용한 문제 검색 | ✅ Phase 1-2 |
+| `get_problem` | `/cote:problem` | 📄 조회 | 특정 문제의 상세 정보 조회 | ✅ Phase 1-2 |
+| `search_tags` | `/cote:tags` | 🏷️ 검색 | 알고리즘 태그 검색 | ✅ Phase 1-2 |
+| `analyze_problem` | `/cote:analyze` | 🔍 분석 | 문제 분석 및 힌트 데이터 생성 | ✅ Phase 3 |
+| `generate_review_template` | `/cote:template` | 📝 템플릿 | 복습 템플릿 및 가이드 프롬프트 생성 | ✅ Phase 3 |
+| ~~`get_hint`~~ | ~~`/cote:hint`~~ | 💡 학습 | ~~단계별 힌트 생성 (AI 기반)~~ | ❌ 제거 (Keyless 전환) |
+| ~~`create_review`~~ | ~~`/cote:review`~~ | 📝 복습 | ~~문제 복습 문서 생성~~ | ❌ 제거 (Keyless 전환) |
 
 ---
 
@@ -395,380 +397,671 @@ Dynamic Programming 관련 태그:
 
 ---
 
-## get_hint
+## analyze_problem
 
 ### 설명
-AI 기반으로 문제에 대한 단계별 힌트를 생성합니다.
-3단계 힌트 시스템을 통해 점진적으로 문제 해결을 도와줍니다.
+백준 문제를 분석하여 구조화된 힌트 데이터를 제공합니다.
+**Keyless 아키텍처**로 설계되어 API 키 없이 사용 가능하며, Claude Code가 이 데이터를 받아 자연어 힌트를 생성합니다.
+
+**구현 상태**: ✅ Phase 3 완료 (`src/tools/analyze-problem.ts`, `src/services/problem-analyzer.ts`)
 
 ### 입력 스키마
 
 ```typescript
 {
-  problem_id: number;       // BOJ 문제 번호 (필수)
-  hint_level: 1 | 2 | 3;    // 힌트 레벨 (필수)
-  user_context?: string;    // 사용자의 현재 이해도 (선택)
+  problem_id: number;          // BOJ 문제 번호 (필수, 양의 정수)
+  include_similar?: boolean;   // 유사 문제 포함 여부 (선택, 기본값: true)
 }
+```
+
+**Zod 스키마**:
+```typescript
+const AnalyzeProblemInputSchema = z.object({
+  problem_id: z.number().int().positive().describe('백준 문제 번호 (양수)'),
+  include_similar: z.boolean().optional().default(true).describe('유사 문제 포함 여부 (기본값: true)')
+});
 ```
 
 #### 파라미터 상세
 
-| 파라미터 | 타입 | 필수 | 설명 |
-|---------|------|------|------|
-| `problem_id` | number | **필수** | BOJ 문제 번호 |
-| `hint_level` | 1\|2\|3 | **필수** | 힌트 레벨 (1=기본, 2=중급, 3=상세) |
-| `user_context` | string | 선택 | 사용자의 현재 이해도 또는 막힌 부분 |
-
-#### 힌트 레벨 가이드
-
-| 레벨 | 내용 | 적합한 상황 |
-|------|------|-----------|
-| **1** | 문제 패턴 인식 (어떤 알고리즘인지) | 문제 접근 방향을 모를 때 |
-| **2** | 핵심 통찰 및 접근법 (완전한 해법 제외) | 알고리즘은 알지만 구체적 방법 모를 때 |
-| **3** | 상세한 알고리즘 단계 (코드는 제외) | 거의 다 이해했지만 세부 단계 확인 필요할 때 |
+| 파라미터 | 타입 | 필수 | 기본값 | 설명 |
+|---------|------|------|--------|------|
+| `problem_id` | number | **필수** | - | BOJ 문제 번호 |
+| `include_similar` | boolean | 선택 | true | 유사 문제 추천 포함 여부 |
 
 ### 출력 스키마
 
 ```typescript
 {
+  problem: Problem;                     // 문제 기본 정보
+  difficulty: DifficultyContext;        // 난이도 컨텍스트
+  algorithm: AlgorithmInfo;             // 알고리즘 정보
+  hint_points: HintPoint[];             // 3단계 힌트 포인트
+  constraints: Constraint[];            // 제약 조건 분석
+  similar_problems?: Problem[];         // 유사 문제 추천
+}
+```
+
+**상세 타입 정의**:
+
+```typescript
+interface Problem {
   problemId: number;
-  problemTitle: string;
-  hintLevel: number;
-  hint: string;             // 마크다운 형식의 힌트
-  suggestedNextLevel?: number;  // 다음 힌트 레벨 제안
-  relatedConcepts?: string[];   // 관련 개념
+  titleKo: string;
+  level: number;
+  tags: Tag[];
+}
+
+interface DifficultyContext {
+  tier: string;              // "Silver III"
+  emoji: string;             // "🥈"
+  percentile: string;        // "상위 30-40%"
+  context: string;           // "Silver 중급 DP 입문 문제"
+}
+
+interface AlgorithmInfo {
+  primary_tags: string[];                    // ["dp"]
+  typical_approaches: string[];              // ["Bottom-up DP"]
+  time_complexity_typical: string;           // "O(N)"
+  space_complexity_typical: string;          // "O(N)"
+}
+
+interface HintPoint {
+  level: 1 | 2 | 3;          // 힌트 레벨
+  type: 'pattern' | 'insight' | 'strategy';
+  key: string;               // 힌트 제목
+  description: string;       // 힌트 설명
+  steps?: string[];          // 구체적 단계 (level 3에만)
+  pitfalls?: string[];       // 주의할 점
+}
+
+interface Constraint {
+  type: 'input_size' | 'value_range' | 'time_limit' | 'memory_limit';
+  description: string;
+  implication: string;       // 제약이 의미하는 바
 }
 ```
 
 ### 사용 예시
 
-#### 예시 1: 레벨 1 힌트 (문제 패턴 인식)
-**사용자**: "11053번 문제 어떻게 풀어야 할지 모르겠어. 힌트 줘"
+#### 예시 1: 기본 문제 분석
+**사용자**: "1463번 문제 분석해줘"
 
 **도구 호출**:
 ```json
 {
-  "problem_id": 11053,
-  "hint_level": 1
+  "problem_id": 1463,
+  "include_similar": true
 }
 ```
 
 **응답**:
-```
-[11053] 가장 긴 증가하는 부분 수열 - 레벨 1 힌트
-
-🎯 문제 패턴
-
-이 문제는 **동적 계획법(Dynamic Programming)** 문제입니다.
-
-부분 수열의 각 위치에서 "이전 원소들을 고려했을 때
-여기까지의 최선의 선택"을 저장하는 방식으로 접근해보세요.
-
-작은 부분 문제의 해를 저장하고, 이를 조합하여
-더 큰 문제를 해결하는 방식을 고민해보세요.
-
-💡 다음 단계
-레벨 2 힌트에서는 DP 배열을 어떻게 정의하고
-점화식을 세우는지 알려드리겠습니다.
-```
-
-#### 예시 2: 레벨 2 힌트 (핵심 통찰)
-**사용자**: "DP라는 건 알겠는데 배열을 어떻게 정의해야 할지 모르겠어. 레벨 2 힌트 줘"
-
-**도구 호출**:
 ```json
 {
-  "problem_id": 11053,
-  "hint_level": 2,
-  "user_context": "DP라는 것은 알지만 상태 정의를 모르겠음"
-}
-```
-
-**응답**:
-```
-[11053] 가장 긴 증가하는 부분 수열 - 레벨 2 힌트
-
-🧩 핵심 아이디어
-
-DP 배열을 다음과 같이 정의해봅시다:
-**dp[i] = i번째 원소를 마지막으로 하는 가장 긴 증가 부분 수열의 길이**
-
-각 위치 i에서, 이전 위치들(j < i)을 확인하며:
-- arr[j] < arr[i]인 경우 (증가 조건 만족)
-- dp[j]가 최대인 것을 찾습니다
-
-점화식:
-```
-dp[i] = max(dp[j]) + 1 (단, j < i이고 arr[j] < arr[i])
-```
-
-초기값: dp[0] = 1 (첫 번째 원소 자체가 길이 1인 수열)
-
-최종 답: max(dp[0], dp[1], ..., dp[n-1])
-
-💡 다음 단계
-레벨 3 힌트에서는 구체적인 알고리즘 단계와
-시간 복잡도까지 설명드리겠습니다.
-```
-
-#### 예시 3: 레벨 3 힌트 (상세 알고리즘)
-**사용자**: "레벨 3 힌트까지 보고 싶어"
-
-**도구 호출**:
-```json
-{
-  "problem_id": 11053,
-  "hint_level": 3
-}
-```
-
-**응답**:
-```
-[11053] 가장 긴 증가하는 부분 수열 - 레벨 3 힌트
-
-📋 알고리즘 단계
-
-**1단계: 초기화**
-- n = 수열의 길이
-- arr[] = 입력 수열
-- dp[] = [1, 1, 1, ..., 1] (길이 n, 모두 1로 초기화)
-
-**2단계: DP 배열 채우기**
-```
-for i in range(1, n):
-    for j in range(0, i):
-        if arr[j] < arr[i]:
-            dp[i] = max(dp[i], dp[j] + 1)
-```
-
-각 i에 대해 이전 모든 j를 확인하며,
-증가 조건을 만족하는 경우 dp 값을 갱신합니다.
-
-**3단계: 최댓값 찾기**
-```
-answer = max(dp)
-```
-
-⏱️ 시간 복잡도: O(n²)
-- 외부 루프: n번
-- 내부 루프: i번 (평균 n/2번)
-- 전체: n × n/2 = O(n²)
-
-💾 공간 복잡도: O(n)
-- dp 배열: n개 원소
-
-🎓 관련 개념
-- 동적 계획법 (Dynamic Programming)
-- 최장 증가 부분 수열 (LIS)
-- 더 빠른 풀이: O(n log n) 이분 탐색 활용
-
-이제 직접 코드로 구현해보세요!
-```
-
-### 주의사항
-
-- 레벨 3 힌트도 **실제 코드는 제공하지 않습니다**
-- 힌트는 문제의 태그와 난이도를 기반으로 생성됩니다
-- `user_context`를 제공하면 더 맞춤화된 힌트를 받을 수 있습니다
-- 힌트 생성에는 2-5초 소요될 수 있습니다 (AI 처리 시간)
-
-### 에러 케이스
-
-| 에러 | 원인 | 해결 방법 |
-|------|------|----------|
-| "Invalid hint level" | 1-3 범위 외 입력 | 1, 2, 3 중 선택 |
-| "Problem not found" | 존재하지 않는 문제 ID | 유효한 문제 번호 확인 |
-| "Hint generation failed" | AI API 오류 | 잠시 후 재시도 |
-
----
-
-## create_review
-
-### 설명
-문제 해결 후 구조화된 복습 문서를 마크다운 형식으로 생성합니다.
-나중에 다시 볼 수 있도록 풀이 과정과 인사이트를 체계적으로 정리합니다.
-
-### 입력 스키마
-
-```typescript
-{
-  problem_id: number;           // BOJ 문제 번호 (필수)
-  solution_approach: string;    // 해결 접근법 (필수)
-  time_complexity?: string;     // 시간 복잡도 (선택)
-  space_complexity?: string;    // 공간 복잡도 (선택)
-  key_insights?: string;        // 핵심 인사이트 (선택)
-  difficulties?: string;        // 어려웠던 점 (선택)
-}
-```
-
-#### 파라미터 상세
-
-| 파라미터 | 타입 | 필수 | 설명 |
-|---------|------|------|------|
-| `problem_id` | number | **필수** | BOJ 문제 번호 |
-| `solution_approach` | string | **필수** | 어떻게 해결했는지 설명 (최소 10자) |
-| `time_complexity` | string | 선택 | 시간 복잡도 (예: "O(n log n)") |
-| `space_complexity` | string | 선택 | 공간 복잡도 (예: "O(n)") |
-| `key_insights` | string | 선택 | 핵심 인사이트 또는 배운 점 |
-| `difficulties` | string | 선택 | 어려웠던 점 또는 실수했던 부분 |
-
-### 출력 스키마
-
-```typescript
-{
-  markdown: string;         // 생성된 마크다운 문서
-  suggestedFilename: string; // 추천 파일명
-  relatedProblems?: [       // 관련 문제 추천
+  "problem": {
+    "problemId": 1463,
+    "titleKo": "1로 만들기",
+    "level": 8,
+    "tags": [
+      { "key": "dp", "displayNames": [{ "language": "ko", "name": "다이나믹 프로그래밍" }] }
+    ]
+  },
+  "difficulty": {
+    "tier": "Silver III",
+    "emoji": "🥈",
+    "percentile": "상위 30-40%",
+    "context": "Silver 중급 DP 입문 문제"
+  },
+  "algorithm": {
+    "primary_tags": ["dp"],
+    "typical_approaches": ["Bottom-up DP", "Top-down DP (메모이제이션)"],
+    "time_complexity_typical": "O(N)",
+    "space_complexity_typical": "O(N)"
+  },
+  "hint_points": [
     {
-      problemId: number;
-      title: string;
-      level: number;
-      reason: string;       // 추천 이유
+      "level": 1,
+      "type": "pattern",
+      "key": "동적 프로그래밍 (DP)",
+      "description": "이 문제는 큰 문제를 작은 부분 문제로 나누어 해결하는 DP 문제입니다. 각 숫자 N에 대해 '1로 만드는 최소 연산 횟수'를 구해야 합니다.",
+      "pitfalls": [
+        "그리디하게 접근하면 최적해를 보장할 수 없습니다",
+        "3으로 나누기가 항상 최선은 아닙니다"
+      ]
+    },
+    {
+      "level": 2,
+      "type": "insight",
+      "key": "상태 정의와 점화식",
+      "description": "dp[i] = i를 1로 만드는 최소 연산 횟수로 정의합니다. dp[i]는 dp[i-1], dp[i/2] (i가 짝수), dp[i/3] (i가 3의 배수) 중 최솟값 + 1입니다.",
+      "pitfalls": [
+        "dp 배열을 초기화할 때 충분히 큰 값으로 설정해야 합니다",
+        "나눗셈 조건을 확인하지 않으면 인덱스 에러가 발생합니다"
+      ]
+    },
+    {
+      "level": 3,
+      "type": "strategy",
+      "key": "Bottom-up 구현 전략",
+      "description": "1부터 N까지 순차적으로 dp 값을 채워나갑니다. 각 i에 대해 가능한 연산(3으로 나누기, 2로 나누기, 1 빼기)을 모두 고려하여 최솟값을 선택합니다.",
+      "steps": [
+        "1. dp 배열을 크기 N+1로 초기화 (dp[1] = 0)",
+        "2. 2부터 N까지 반복",
+        "3. 각 i에 대해:",
+        "   - dp[i] = dp[i-1] + 1 (기본값)",
+        "   - i % 2 == 0이면 dp[i] = min(dp[i], dp[i/2] + 1)",
+        "   - i % 3 == 0이면 dp[i] = min(dp[i], dp[i/3] + 1)",
+        "4. dp[N] 반환"
+      ],
+      "pitfalls": [
+        "dp[0]은 사용하지 않으므로 초기화 불필요",
+        "연산 순서는 결과에 영향을 주지 않습니다"
+      ]
+    }
+  ],
+  "constraints": [
+    {
+      "type": "input_size",
+      "description": "1 ≤ N ≤ 1,000,000",
+      "implication": "O(N) 시간 복잡도로 충분합니다. O(N log N)이나 O(N²)도 가능하지만 비효율적입니다."
+    },
+    {
+      "type": "time_limit",
+      "description": "0.15초 (150ms)",
+      "implication": "Python의 경우 약 1,500만 번 연산, C++은 약 1억 5천만 번 연산 가능. DP 배열 갱신만으로 충분합니다."
+    }
+  ],
+  "similar_problems": [
+    {
+      "problemId": 2579,
+      "titleKo": "계단 오르기",
+      "level": 8,
+      "tags": [{ "key": "dp" }]
+    },
+    {
+      "problemId": 1149,
+      "titleKo": "RGB거리",
+      "level": 10,
+      "tags": [{ "key": "dp" }]
     }
   ]
 }
 ```
 
-### 사용 예시
-
-#### 예시 1: 기본 복습 생성
-**사용자**: "1927번 힙 문제 풀었어. 복습 문서 만들어줘"
-
-**시스템**: "어떻게 해결하셨나요? 풀이 접근법을 알려주세요."
-
-**사용자**: "Python의 heapq 라이브러리를 사용했어. 0이 입력되면 최솟값을 출력하고 제거하고, 다른 숫자가 입력되면 힙에 추가하는 방식으로 풀었어."
-
-**도구 호출**:
-```json
-{
-  "problem_id": 1927,
-  "solution_approach": "Python의 heapq 라이브러리를 사용하여 최소 힙을 구현했습니다. 0이 입력되면 최솟값을 출력하고 제거하며, 다른 자연수가 입력되면 힙에 추가하는 방식으로 해결했습니다."
-}
-```
-
-**응답**:
-````markdown
-복습 문서를 생성했습니다:
-
----
-
-# [1927] 최소 힙 (Silver II)
-
-## 문제 링크
-https://www.acmicpc.net/problem/1927
-
-## 태그
-- 자료 구조
-- 우선순위 큐
-
-## 난이도
-티어: Silver II (레벨 9)
-
-## 해결 접근법
-Python의 heapq 라이브러리를 사용하여 최소 힙을 구현했습니다.
-0이 입력되면 최솟값을 출력하고 제거하며,
-다른 자연수가 입력되면 힙에 추가하는 방식으로 해결했습니다.
-
-## 시간 복잡도
-(작성되지 않음)
-
-## 공간 복잡도
-(작성되지 않음)
-
-## 핵심 인사이트
-(작성되지 않음)
-
-## 어려웠던 점 & 배운 점
-(작성되지 않음)
-
-## 관련 문제
-- [11279] 최대 힙 (Silver II) - 같은 우선순위 큐 개념
-- [11286] 절댓값 힙 (Silver I) - 우선순위 큐 응용
-- [1655] 가운데를 말해요 (Gold II) - 두 개의 힙 활용
-
----
-*해결 날짜: 2026-02-13*
-*통계: 73,425명 해결, 평균 1.8회 시도*
-
----
-
-**추천 파일명**: `reviews/1927_최소힙_2026-02-13.md`
-````
-
-#### 예시 2: 상세 복습 생성
-**사용자**: "방금 푼 11053번 문제 복습 문서 만들어줘. 이번엔 복잡도랑 배운 점도 포함할게"
+#### 예시 2: 유사 문제 제외
+**사용자**: "11053번 문제 분석만 해줘, 유사 문제는 필요 없어"
 
 **도구 호출**:
 ```json
 {
   "problem_id": 11053,
-  "solution_approach": "DP 배열을 정의하여 각 위치에서의 최장 증가 부분 수열 길이를 저장했습니다. dp[i] = i번째 원소를 마지막으로 하는 LIS의 길이로 정의하고, 이전 원소들 중 현재 원소보다 작은 것들의 dp 값 중 최댓값 + 1로 갱신했습니다.",
-  "time_complexity": "O(n^2)",
-  "space_complexity": "O(n)",
-  "key_insights": "DP의 상태 정의가 가장 중요했습니다. '각 위치를 끝으로 하는'이라는 조건으로 정의함으로써 점화식을 자연스럽게 유도할 수 있었습니다. 또한 O(n log n) 이분 탐색 풀이도 존재한다는 것을 알게 되었습니다.",
-  "difficulties": "처음에는 dp[i]를 'i번째까지의 최장 길이'로 잘못 정의해서 점화식을 세울 수 없었습니다. 상태 정의를 바꾸고 나서야 해결할 수 있었습니다."
+  "include_similar": false
 }
 ```
 
 **응답**:
-````markdown
-# [11053] 가장 긴 증가하는 부분 수열 (Silver II)
+```json
+{
+  "problem": { ... },
+  "difficulty": { ... },
+  "algorithm": { ... },
+  "hint_points": [ ... ]
+  // similar_problems 필드 없음
+}
+```
 
-## 문제 링크
-https://www.acmicpc.net/problem/11053
+#### 예시 3: Claude Code 활용 시나리오
+**사용자**: "1463번 문제 Level 2 힌트 줘"
 
-## 태그
-- 다이나믹 프로그래밍
-- 가장 긴 증가하는 부분 수열: O(n log n)
+**Claude Code 내부 처리**:
+```
+1. analyze_problem(1463) 호출 → JSON 응답 수신
+2. hint_points 배열에서 level: 2 항목 추출
+3. 자연어 힌트 생성:
 
-## 난이도
-티어: Silver II (레벨 9)
+"[1463] 1로 만들기 - Level 2 힌트
 
-## 해결 접근법
-DP 배열을 정의하여 각 위치에서의 최장 증가 부분 수열 길이를 저장했습니다.
-dp[i] = i번째 원소를 마지막으로 하는 LIS의 길이로 정의하고,
-이전 원소들 중 현재 원소보다 작은 것들의 dp 값 중 최댓값 + 1로 갱신했습니다.
+🧩 핵심 아이디어
 
-## 시간 복잡도
-O(n^2) - 이중 반복문 사용
+이 문제는 **상태 정의와 점화식**이 핵심입니다.
 
-## 공간 복잡도
-O(n) - DP 배열
+dp[i]를 'i를 1로 만드는 최소 연산 횟수'로 정의합니다.
+dp[i]는 다음 세 가지 경우 중 최솟값에 1을 더한 값입니다:
+- dp[i-1] (1을 뺀 경우)
+- dp[i/2] (2로 나눈 경우, i가 짝수일 때)
+- dp[i/3] (3으로 나눈 경우, i가 3의 배수일 때)
 
-## 핵심 인사이트
-- DP의 상태 정의가 가장 중요했습니다
-- '각 위치를 끝으로 하는'이라는 조건으로 정의함으로써 점화식을 자연스럽게 유도
-- O(n log n) 이분 탐색 풀이도 존재한다는 것을 학습
+⚠️ 주의할 점:
+- dp 배열을 초기화할 때 충분히 큰 값으로 설정해야 합니다
+- 나눗셈 조건을 확인하지 않으면 인덱스 에러가 발생합니다
 
-## 어려웠던 점 & 배운 점
-처음에는 dp[i]를 'i번째까지의 최장 길이'로 잘못 정의해서 점화식을 세울 수 없었습니다.
-상태 정의를 바꾸고 나서야 해결할 수 있었습니다.
+💡 다음 단계
+Level 3 힌트에서는 구체적인 구현 단계를 알려드리겠습니다."
+```
 
-DP 문제는 상태 정의가 절반이라는 것을 깨달았습니다.
+### 구현 세부사항
 
-## 관련 문제
-- [11054] 가장 긴 바이토닉 부분 수열 (Gold III) - LIS 응용
-- [12015] 가장 긴 증가하는 부분 수열 2 (Gold II) - O(n log n) 풀이
-- [14002] 가장 긴 증가하는 부분 수열 4 (Gold IV) - 경로 역추적
+**ProblemAnalyzer 서비스**:
+- **위치**: `src/services/problem-analyzer.ts` (590 lines)
+- **주요 메서드**:
+  - `analyzeProblem(problemId, includeSimilar)`: 문제 분석 실행
+  - `buildDifficultyContext(level)`: 난이도 컨텍스트 생성
+  - `buildAlgorithmInfo(tags)`: 알고리즘 정보 구축
+  - `generateHintPoints(problem, algorithmInfo)`: 3단계 힌트 포인트 생성
+  - `analyzeConstraints(problem)`: 제약 조건 분석
+  - `findSimilarProblems(problem)`: 유사 문제 찾기
 
----
-*해결 날짜: 2026-02-13*
-*통계: 83,247명 해결, 평균 2.1회 시도*
-````
+**힌트 패턴 데이터**:
+```typescript
+const HINT_PATTERNS = {
+  dp: {
+    level1: { type: 'pattern', key: '동적 프로그래밍', ... },
+    level2: { type: 'insight', key: '상태 정의와 점화식', ... },
+    level3: { type: 'strategy', key: 'Bottom-up 구현', steps: [...] }
+  },
+  greedy: { ... },
+  graph: { ... }
+  // 30개 이상의 알고리즘 패턴
+};
+```
+
+**특징**:
+- **결정적(Deterministic)**: 동일 입력에 항상 같은 출력
+- **API 키 불필요**: 모든 데이터는 사전 정의됨
+- **빠른 응답**: LLM 호출 없이 즉시 반환 (< 500ms)
+
+### Claude Code 활용
+
+**Keyless 아키텍처**의 핵심 원리:
+1. **MCP 서버**: 구조화된 JSON 데이터만 제공
+2. **Claude Code**: JSON을 받아 자연어 힌트 생성
+3. **Zero Configuration**: API 키 설정 불필요
+
+**사용자 워크플로우**:
+```
+사용자: "1463번 문제 Level 2 힌트 줘"
+    ↓
+Claude Code: analyze_problem(1463) 호출
+    ↓
+cote-mcp Server: ProblemAnalysis JSON 반환
+    ↓
+Claude Code: hint_points[1]을 자연어로 변환
+    ↓
+사용자: 자연스러운 한글 힌트 받음
+```
 
 ### 주의사항
 
-- `solution_approach`는 최소 10자 이상 작성해야 합니다
-- 선택 필드는 비워도 되지만, 작성하면 더 유용한 복습 자료가 됩니다
-- 관련 문제는 같은 태그를 가진 문제 중 비슷한 난이도로 자동 추천됩니다
-- 생성된 마크다운은 별도로 파일로 저장해야 합니다 (도구는 내용만 생성)
+- ✅ **API 키 불필요**: 환경 변수 설정 없이 바로 사용 가능
+- Level 3 힌트도 **실제 코드는 제공하지 않습니다** (알고리즘 단계까지만)
+- 힌트는 문제의 태그와 난이도를 기반으로 사전 정의된 패턴에서 생성됩니다
+- 응답 시간 < 500ms (LLM 호출 없음)
+- Claude Code가 자연어 생성을 담당하므로, MCP 서버는 데이터만 제공합니다
 
 ### 에러 케이스
 
 | 에러 | 원인 | 해결 방법 |
 |------|------|----------|
-| "Approach too short" | solution_approach < 10자 | 더 자세히 작성 |
-| "Problem not found" | 존재하지 않는 문제 ID | 유효한 문제 번호 확인 |
+| "Number must be positive" | problem_id가 양수가 아님 | 양의 정수 입력 |
+| "Required" (problem_id) | problem_id 누락 | 필수 파라미터 확인 |
+| "문제를 찾을 수 없습니다: {id}번" | ProblemNotFoundError | 유효한 문제 번호 확인 |
+| "문제 분석 중 오류 발생" | 내부 에러 | 재시도 또는 로그 확인 |
+
+---
+
+## generate_review_template
+
+### 설명
+문제 복습용 마크다운 템플릿과 가이드 프롬프트를 생성합니다.
+**Keyless 아키텍처**로 설계되어, Claude Code가 템플릿과 프롬프트를 받아 사용자와 대화하며 복습 문서를 완성합니다.
+
+**구현 상태**: ✅ Phase 3 완료 (`src/tools/generate-review-template.ts`, `src/services/review-template-generator.ts`)
+
+### 입력 스키마
+
+```typescript
+{
+  problem_id: number;       // BOJ 문제 번호 (필수, 양의 정수)
+  user_notes?: string;      // 사용자 초기 메모 (선택)
+}
+```
+
+**Zod 스키마**:
+```typescript
+const GenerateReviewTemplateInputSchema = z.object({
+  problem_id: z.number().int().positive().describe('백준 문제 번호 (양수)'),
+  user_notes: z.string().optional().describe('사용자 초기 메모 (선택)')
+});
+```
+
+#### 파라미터 상세
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|---------|------|------|------|
+| `problem_id` | number | **필수** | BOJ 문제 번호 |
+| `user_notes` | string | 선택 | 초기 메모 또는 간단한 요약 |
+
+### 출력 스키마
+
+```typescript
+{
+  template: string;                  // 마크다운 템플릿
+  problem_data: ProblemData;         // 문제 기본 정보
+  analysis: AnalysisInfo;            // 분석 정보
+  related_problems: Problem[];       // 관련 문제 추천
+  prompts: GuidePrompts;             // 가이드 프롬프트
+}
+```
+
+**상세 타입 정의**:
+
+```typescript
+interface ProblemData {
+  id: number;
+  title: string;
+  tier: string;                      // "Silver III"
+  tier_emoji: string;                // "🥈"
+  tags: string[];                    // ["다이나믹 프로그래밍"]
+  accepted_count: number;
+  average_tries: number;
+  boj_link: string;
+}
+
+interface AnalysisInfo {
+  tags_explanation: Record<string, string>;     // { dp: "동적 프로그래밍은..." }
+  common_approaches: string[];                  // ["Bottom-up DP"]
+  time_complexity_hint: string;                 // "일반적으로 O(N) 또는 O(N log N)"
+  space_complexity_hint: string;                // "일반적으로 O(N)"
+  common_mistakes: string[];                    // ["dp 배열 크기 설정", ...]
+}
+
+interface GuidePrompts {
+  solution_approach: string;                    // "이 문제를 어떻게 해결했나요?"
+  time_complexity: string;                      // "시간 복잡도를 분석해주세요..."
+  space_complexity: string;                     // "공간 복잡도는 어떻게 되나요?"
+  key_insights: string;                         // "배운 점이나 주의할 점은?"
+  difficulties: string;                         // "어려웠던 부분이 있었나요?"
+}
+```
+
+**템플릿 구조**:
+```markdown
+# [문제번호] 문제제목
+
+## 문제 정보
+[자동 생성: 티어, 태그, 통계, BOJ 링크]
+
+## 풀이 접근법
+[사용자 입력 필요]
+
+## 시간 복잡도
+[사용자 입력 필요]
+
+## 공간 복잡도
+[사용자 입력 필요]
+
+## 핵심 인사이트
+[사용자 입력 필요]
+
+## 어려웠던 점
+[사용자 입력 필요]
+
+## 관련 문제
+[자동 생성: 유사 문제 추천]
+
+---
+*해결 날짜: [현재 날짜]*
+```
+
+### 사용 예시
+
+#### 예시 1: 템플릿 생성
+**사용자**: "1463번 문제 복습 템플릿 만들어줘"
+
+**도구 호출**:
+```json
+{
+  "problem_id": 1463
+}
+```
+
+**응답**:
+```json
+{
+  "template": "# 1463. 1로 만들기\n\n## 문제 정보\n**티어**: 🥈 Silver III\n**태그**: 다이나믹 프로그래밍\n**해결한 사람**: 123,456명\n**평균 시도**: 2.3회\n**문제 링크**: [BOJ 1463](https://www.acmicpc.net/problem/1463)\n\n## 풀이 접근법\n[여기에 작성해주세요]\n\n## 시간 복잡도\n[여기에 작성해주세요]\n\n## 공간 복잡도\n[여기에 작성해주세요]\n\n## 핵심 인사이트\n[여기에 작성해주세요]\n\n## 어려웠던 점\n[여기에 작성해주세요]\n\n## 관련 문제\n- [2579] 계단 오르기 (Silver III)\n- [1149] RGB거리 (Silver I)\n\n---\n*해결 날짜: 2026-02-13*\n",
+  "problem_data": {
+    "id": 1463,
+    "title": "1로 만들기",
+    "tier": "Silver III",
+    "tier_emoji": "🥈",
+    "tags": ["다이나믹 프로그래밍"],
+    "accepted_count": 123456,
+    "average_tries": 2.3,
+    "boj_link": "https://www.acmicpc.net/problem/1463"
+  },
+  "analysis": {
+    "tags_explanation": {
+      "dp": "동적 프로그래밍은 큰 문제를 작은 부분 문제로 나누어 해결하는 알고리즘입니다. 각 부분 문제의 해를 저장(메모이제이션)하여 중복 계산을 방지합니다."
+    },
+    "common_approaches": [
+      "Bottom-up DP (반복문)",
+      "Top-down DP (재귀 + 메모이제이션)"
+    ],
+    "time_complexity_hint": "일반적으로 O(N) 또는 O(N log N)",
+    "space_complexity_hint": "일반적으로 O(N) (DP 배열)",
+    "common_mistakes": [
+      "그리디하게 접근하여 최적해를 놓침",
+      "dp 배열 초기화를 잘못함",
+      "나눗셈 조건을 확인하지 않음"
+    ]
+  },
+  "related_problems": [
+    {
+      "problemId": 2579,
+      "titleKo": "계단 오르기",
+      "level": 8,
+      "tags": [{"key": "dp"}]
+    },
+    {
+      "problemId": 1149,
+      "titleKo": "RGB거리",
+      "level": 10,
+      "tags": [{"key": "dp"}]
+    }
+  ],
+  "prompts": {
+    "solution_approach": "이 문제를 어떻게 해결했나요? 사용한 알고리즘과 접근 방법을 설명해주세요.",
+    "time_complexity": "시간 복잡도를 분석해주세요. 반복문이나 재귀 호출의 횟수를 고려하여 Big-O 표기법으로 작성해주세요.",
+    "space_complexity": "공간 복잡도는 어떻게 되나요? 사용한 배열이나 자료구조의 크기를 고려해주세요.",
+    "key_insights": "이 문제를 풀면서 배운 점이나 나중에 주의할 점이 있나요?",
+    "difficulties": "문제를 푸는 과정에서 어려웠던 부분이 있었나요? 어떻게 해결했나요?"
+  }
+}
+```
+
+#### 예시 2: Claude Code 대화형 복습 작성
+**사용자**: "1463번 문제 복습 문서 만들어줘"
+
+**Claude Code 내부 처리**:
+```
+1. generate_review_template(1463) 호출 → JSON 응답 수신
+2. 템플릿과 프롬프트 확인
+3. 대화형 복습 문서 작성 시작
+
+Claude Code: "1463번 '1로 만들기' 문제의 복습 문서를 만들어드리겠습니다.
+
+먼저, 이 문제를 어떻게 해결했나요?
+사용한 알고리즘과 접근 방법을 설명해주세요."
+
+사용자: "DP 배열을 만들어서 1부터 N까지 각 숫자를 1로 만드는 최소 횟수를 저장했어요."
+
+Claude Code: "좋습니다! 시간 복잡도를 분석해주세요.
+반복문이나 재귀 호출의 횟수를 고려하여 Big-O 표기법으로 작성해주세요."
+
+사용자: "O(N)이에요. 1부터 N까지 한 번씩만 순회했거든요."
+
+Claude Code: "완벽합니다. 공간 복잡도는 어떻게 되나요?"
+
+사용자: "O(N)이요. dp 배열 하나만 사용했어요."
+
+Claude Code: "이 문제를 풀면서 배운 점이나 나중에 주의할 점이 있나요?"
+
+사용자: "그리디로 접근하면 안 되고, 세 가지 연산을 모두 고려해야 한다는 걸 배웠어요."
+
+Claude Code: "훌륭합니다! 복습 문서를 완성했습니다."
+
+[최종 마크다운 생성]
+```
+
+**최종 생성 문서**:
+```markdown
+# 1463. 1로 만들기
+
+## 문제 정보
+**티어**: 🥈 Silver III
+**태그**: 다이나믹 프로그래밍
+**해결한 사람**: 123,456명
+**평균 시도**: 2.3회
+**문제 링크**: [BOJ 1463](https://www.acmicpc.net/problem/1463)
+
+## 풀이 접근법
+DP 배열을 만들어서 1부터 N까지 각 숫자를 1로 만드는 최소 횟수를 저장했습니다.
+
+## 시간 복잡도
+O(N) - 1부터 N까지 한 번씩만 순회
+
+## 공간 복잡도
+O(N) - dp 배열 하나만 사용
+
+## 핵심 인사이트
+그리디로 접근하면 안 되고, 세 가지 연산(3으로 나누기, 2로 나누기, 1 빼기)을 모두 고려해야 한다는 것을 배웠습니다.
+
+## 관련 문제
+- [2579] 계단 오르기 (Silver III)
+- [1149] RGB거리 (Silver I)
+
+---
+*해결 날짜: 2026-02-13*
+```
+
+#### 예시 3: 초기 메모 포함
+**사용자**: "11053번 복습 템플릿 만들어줘. DP 배열 정의가 헷갈렸다고 메모 남겨줘"
+
+**도구 호출**:
+```json
+{
+  "problem_id": 11053,
+  "user_notes": "DP 배열 정의가 헷갈렸음"
+}
+```
+
+**응답**:
+```json
+{
+  "template": "# 11053. 가장 긴 증가하는 부분 수열\n\n...\n\n## 초기 메모\nDP 배열 정의가 헷갈렸음\n\n...",
+  "problem_data": { ... },
+  "analysis": {
+    "tags_explanation": {
+      "dp": "동적 프로그래밍...",
+      "lis": "최장 증가 부분 수열(LIS)은 배열에서 순서를 유지하면서 증가하는 부분 수열 중 가장 긴 것을 찾는 문제입니다."
+    },
+    "common_approaches": ["O(N²) DP", "O(N log N) 이분 탐색"],
+    "time_complexity_hint": "O(N²) 또는 O(N log N)",
+    "space_complexity_hint": "O(N)",
+    "common_mistakes": [
+      "dp[i]를 'i번째까지의 최장 길이'로 잘못 정의",
+      "dp[i]는 'i번째를 끝으로 하는 LIS 길이'로 정의해야 함"
+    ]
+  },
+  "prompts": { ... }
+}
+```
+
+### 구현 세부사항
+
+**ReviewTemplateGenerator 서비스**:
+- **위치**: `src/services/review-template-generator.ts` (242 lines)
+- **주요 메서드**:
+  - `generateTemplate(problemId, userNotes?)`: 템플릿 및 데이터 생성
+  - `buildTemplate(problemData, userNotes?)`: 마크다운 템플릿 구축
+  - `buildAnalysis(tags)`: 분석 정보 생성
+  - `buildGuidePrompts()`: 가이드 프롬프트 생성
+  - `findRelatedProblems(problem)`: 관련 문제 찾기
+
+**분석 데이터 패턴**:
+```typescript
+const TAG_EXPLANATIONS = {
+  dp: "동적 프로그래밍은 큰 문제를 작은 부분 문제로...",
+  greedy: "그리디 알고리즘은 매 순간 최선의 선택을...",
+  graph: "그래프는 정점과 간선으로 이루어진..."
+  // 30개 이상의 태그 설명
+};
+
+const COMMON_MISTAKES = {
+  dp: ["상태 정의 오류", "초기화 실수", ...],
+  greedy: ["최적해 보장 확인 누락", ...],
+  // ...
+};
+```
+
+**가이드 프롬프트**:
+```typescript
+const GUIDE_PROMPTS = {
+  solution_approach: "이 문제를 어떻게 해결했나요? 사용한 알고리즘과 접근 방법을 설명해주세요.",
+  time_complexity: "시간 복잡도를 분석해주세요. 반복문이나 재귀 호출의 횟수를 고려하여 Big-O 표기법으로 작성해주세요.",
+  space_complexity: "공간 복잡도는 어떻게 되나요? 사용한 배열이나 자료구조의 크기를 고려해주세요.",
+  key_insights: "이 문제를 풀면서 배운 점이나 나중에 주의할 점이 있나요?",
+  difficulties: "문제를 푸는 과정에서 어려웠던 부분이 있었나요? 어떻게 해결했나요?"
+};
+```
+
+**특징**:
+- **결정적(Deterministic)**: 동일 입력에 항상 같은 템플릿
+- **API 키 불필요**: 모든 데이터는 사전 정의됨
+- **빠른 응답**: < 500ms
+
+### Claude Code 활용
+
+**Keyless 아키텍처**의 핵심 워크플로우:
+1. **MCP 서버**: 템플릿 + 분석 정보 + 가이드 프롬프트 제공
+2. **Claude Code**: 프롬프트를 사용하여 사용자와 대화
+3. **Claude Code**: 사용자 답변을 템플릿에 채워 최종 문서 생성
+
+**사용자 워크플로우**:
+```
+사용자: "1463번 문제 복습 문서 만들어줘"
+    ↓
+Claude Code: generate_review_template(1463) 호출
+    ↓
+cote-mcp Server: ReviewTemplate JSON 반환
+    ↓
+Claude Code: prompts.solution_approach로 질문
+    ↓
+사용자: 답변
+    ↓
+Claude Code: 답변을 템플릿에 채우기
+    ↓
+(반복: 시간 복잡도, 공간 복잡도, 인사이트, 어려웠던 점)
+    ↓
+Claude Code: 최종 마크다운 문서 생성
+```
+
+### 주의사항
+
+- ✅ **API 키 불필요**: 환경 변수 설정 없이 바로 사용 가능
+- Claude Code가 대화형으로 복습 문서를 작성하도록 안내합니다
+- 관련 문제는 같은 태그를 가진 문제 중 비슷한 난이도로 자동 추천됩니다
+- 응답 시간 < 500ms (LLM 호출 없음)
+- 최종 문서는 Claude Code가 생성하며, 사용자가 파일로 저장할 수 있습니다
+
+### 에러 케이스
+
+| 에러 | 원인 | 해결 방법 |
+|------|------|----------|
+| "Number must be positive" | problem_id가 양수가 아님 | 양의 정수 입력 |
+| "Required" (problem_id) | problem_id 누락 | 필수 파라미터 확인 |
+| "문제를 찾을 수 없습니다: {id}번" | ProblemNotFoundError | 유효한 문제 번호 확인 |
+| "템플릿 생성 중 오류 발생" | 내부 에러 | 재시도 또는 로그 확인 |
 
 ---
 

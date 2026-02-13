@@ -1,21 +1,37 @@
-# solved.ac API 통합 가이드
+# API 통합 가이드
 
-**버전**: 1.0
+**버전**: 1.1
 **마지막 업데이트**: 2026-02-13
 
 ---
 
 ## 목차
 1. [API 개요](#api-개요)
-2. [인증 및 제한사항](#인증-및-제한사항)
-3. [엔드포인트 상세](#엔드포인트-상세)
-4. [에러 처리](#에러-처리)
-5. [코드 예제](#코드-예제)
-6. [베스트 프랙티스](#베스트-프랙티스)
+2. [solved.ac API](#solvedac-api)
+   - [인증 및 제한사항](#인증-및-제한사항)
+   - [엔드포인트 상세](#엔드포인트-상세)
+   - [에러 처리](#에러-처리)
+   - [코드 예제](#코드-예제)
+3. [Claude API (힌트 생성)](#claude-api-힌트-생성)
+   - [API 개요](#claude-api-개요)
+   - [인증 방식](#인증-방식)
+   - [힌트 생성 통합](#힌트-생성-통합)
+   - [프롬프트 전략](#프롬프트-전략)
+   - [에러 처리](#claude-api-에러-처리)
+4. [베스트 프랙티스](#베스트-프랙티스)
 
 ---
 
 ## API 개요
+
+본 프로젝트는 두 개의 외부 API와 통합됩니다:
+
+1. **solved.ac API**: BOJ 문제 메타데이터 조회 (필수)
+2. **Claude API**: AI 기반 힌트 생성 (선택사항)
+
+---
+
+## solved.ac API
 
 ### 기본 정보
 - **Base URL**: `https://solved.ac/api/v3`
@@ -724,6 +740,495 @@ tags.items.forEach(tag => {
   console.log(`- ${koreanName} (${tag.key}): ${tag.problemCount}개 문제`);
 });
 ```
+
+---
+
+## Claude API (힌트 생성)
+
+### Claude API 개요
+
+**목적**: 문제 메타데이터를 기반으로 AI 기반 단계별 힌트를 생성합니다.
+
+### 기본 정보
+
+- **Base URL**: `https://api.anthropic.com/v1`
+- **프로토콜**: HTTPS
+- **응답 형식**: JSON
+- **문자 인코딩**: UTF-8
+- **사용 모델**: `claude-3-5-sonnet-20241022` (기본값)
+
+### 공식 문서
+
+- Anthropic API 문서: https://docs.anthropic.com/
+- SDK 문서: https://github.com/anthropics/anthropic-sdk-typescript
+
+---
+
+### 인증 방식
+
+#### API 키 발급
+
+1. Anthropic Console 접속: https://console.anthropic.com/
+2. API Keys 메뉴에서 새 키 생성
+3. 키를 안전하게 저장 (재확인 불가)
+
+#### 환경 변수 설정
+
+`.env` 파일에 다음 변수를 설정합니다:
+
+```bash
+# Claude API Configuration
+ANTHROPIC_API_KEY=sk-ant-api03-...
+CLAUDE_MODEL=claude-3-5-sonnet-20241022
+CLAUDE_MAX_TOKENS=1024
+CLAUDE_TEMPERATURE=0.7
+CLAUDE_TIMEOUT=30000
+```
+
+#### 인증 헤더
+
+API 요청 시 다음 헤더를 포함해야 합니다:
+
+```typescript
+const headers = {
+  'x-api-key': process.env.ANTHROPIC_API_KEY,
+  'anthropic-version': '2023-06-01',
+  'content-type': 'application/json'
+};
+```
+
+---
+
+### 힌트 생성 통합
+
+#### 아키텍처
+
+```
+User Request
+    ↓
+get_hint Tool Handler
+    ↓
+HintGenerator Service
+    ↓ (프롬프트 구성)
+Claude API
+    ↓ (AI 응답)
+HintGenerator Service
+    ↓ (마크다운 포맷팅)
+Tool Handler
+    ↓
+User Response
+```
+
+#### HintGenerator 클래스
+
+`src/services/hint-generator.ts`에서 구현:
+
+```typescript
+import Anthropic from '@anthropic-ai/sdk';
+
+class HintGenerator {
+  private client: Anthropic;
+  private model: string;
+  private maxTokens: number;
+  private temperature: number;
+  private timeout: number;
+
+  constructor() {
+    this.client = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY
+    });
+    this.model = process.env.CLAUDE_MODEL || 'claude-3-5-sonnet-20241022';
+    this.maxTokens = parseInt(process.env.CLAUDE_MAX_TOKENS || '1024', 10);
+    this.temperature = parseFloat(process.env.CLAUDE_TEMPERATURE || '0.7');
+    this.timeout = parseInt(process.env.CLAUDE_TIMEOUT || '30000', 10);
+  }
+
+  async generateHint(
+    problem: Problem,
+    hintLevel: number,
+    userContext?: string
+  ): Promise<string> {
+    // 1. 프롬프트 생성
+    const prompt = this.buildPrompt(problem, hintLevel, userContext);
+
+    // 2. Claude API 호출
+    const response = await this.client.messages.create({
+      model: this.model,
+      max_tokens: this.maxTokens,
+      temperature: this.temperature,
+      messages: [
+        {
+          role: 'user',
+          content: prompt
+        }
+      ]
+    });
+
+    // 3. 텍스트 추출
+    const textContent = response.content.find(c => c.type === 'text');
+    return textContent?.text || '';
+  }
+}
+```
+
+#### API 요청 예시
+
+**엔드포인트**: `POST /v1/messages`
+
+**요청 본문**:
+```json
+{
+  "model": "claude-3-5-sonnet-20241022",
+  "max_tokens": 1024,
+  "temperature": 0.7,
+  "messages": [
+    {
+      "role": "user",
+      "content": "백준 온라인 저지 문제에 대한 힌트를 제공해주세요.\n\n**문제 정보**:\n- 제목: 가장 긴 증가하는 부분 수열\n- 난이도: Silver II\n- 태그: 다이나믹 프로그래밍\n\n**힌트 레벨 1: 문제 유형 인식**\n\n이 문제가 어떤 유형의 알고리즘 문제인지 간단히 설명해주세요..."
+    }
+  ]
+}
+```
+
+**응답 구조**:
+```json
+{
+  "id": "msg_01ABC...",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "text",
+      "text": "이 문제는 **동적 계획법(Dynamic Programming)** 문제입니다.\n\n부분 수열의 각 위치에서..."
+    }
+  ],
+  "model": "claude-3-5-sonnet-20241022",
+  "stop_reason": "end_turn",
+  "usage": {
+    "input_tokens": 234,
+    "output_tokens": 156
+  }
+}
+```
+
+---
+
+### 프롬프트 전략
+
+#### 레벨별 프롬프트 차별화
+
+**공통 구조**:
+```
+백준 온라인 저지 문제에 대한 힌트를 제공해주세요.
+
+**문제 정보**:
+- 제목: {titleKo}
+- 난이도: {tier}
+- 태그: {tags}
+
+[사용자 컨텍스트 (있는 경우)]
+
+**힌트 레벨 {level}: {레벨명}**
+
+{레벨별 지시사항}
+
+**출력 형식**: 마크다운 형식으로 작성해주세요.
+```
+
+#### 레벨 1: 문제 패턴 인식
+
+**목적**: 문제의 알고리즘 유형을 식별
+
+**프롬프트 전략**:
+```typescript
+if (hintLevel === 1) {
+  prompt += `**힌트 레벨 1: 문제 유형 인식**\n\n`;
+  prompt += `이 문제가 어떤 유형의 알고리즘 문제인지 간단히 설명해주세요.\n`;
+  prompt += `구체적인 풀이는 제시하지 말고, 문제의 카테고리와 접근 방향만 안내해주세요.\n`;
+
+  // 난이도 조정
+  if (isBronze) {
+    prompt += `초보자도 이해할 수 있도록 기본적인 용어를 사용해주세요.\n`;
+  }
+
+  prompt += `\n3-5문장으로 간결하게 작성해주세요.`;
+}
+```
+
+**예상 응답**:
+```markdown
+이 문제는 **동적 계획법(Dynamic Programming)** 문제입니다.
+
+부분 수열의 각 위치에서 "이전 원소들을 고려했을 때
+여기까지의 최선의 선택"을 저장하는 방식으로 접근해보세요.
+
+작은 부분 문제의 해를 저장하고, 이를 조합하여
+더 큰 문제를 해결하는 방식을 고민해보세요.
+```
+
+#### 레벨 2: 핵심 통찰
+
+**목적**: 문제 해결의 핵심 아이디어 제시
+
+**프롬프트 전략**:
+```typescript
+if (hintLevel === 2) {
+  prompt += `**힌트 레벨 2: 핵심 통찰**\n\n`;
+  prompt += `이 문제를 어떻게 접근해야 하는지 핵심 아이디어를 제시해주세요.\n`;
+  prompt += `알고리즘의 핵심 통찰과 주요 개념을 설명하되, 코드를 직접 제공하지 마세요.\n`;
+
+  // 사용자 컨텍스트 반영
+  if (userContext) {
+    prompt += `사용자가 시도한 방법의 문제점을 지적하고, 더 나은 접근법을 제안해주세요.\n`;
+  }
+
+  prompt += `\n7-10문장으로 작성해주세요.`;
+}
+```
+
+**예상 응답**:
+```markdown
+DP 배열을 다음과 같이 정의해봅시다:
+**dp[i] = i번째 원소를 마지막으로 하는 가장 긴 증가 부분 수열의 길이**
+
+각 위치 i에서, 이전 위치들(j < i)을 확인하며:
+- arr[j] < arr[i]인 경우 (증가 조건 만족)
+- dp[j]가 최대인 것을 찾습니다
+
+점화식:
+dp[i] = max(dp[j]) + 1 (단, j < i이고 arr[j] < arr[i])
+```
+
+#### 레벨 3: 상세 알고리즘 단계
+
+**목적**: 구체적인 구현 단계 제공 (코드 제외)
+
+**프롬프트 전략**:
+```typescript
+if (hintLevel === 3) {
+  prompt += `**힌트 레벨 3: 상세 알고리즘 전략**\n\n`;
+  prompt += `이 문제를 해결하기 위한 단계별 알고리즘 전략을 설명해주세요.\n`;
+  prompt += `각 단계에서 무엇을 해야 하는지, 시간복잡도는 어떻게 되는지 상세히 안내해주세요.\n`;
+  prompt += `코드를 직접 제공하지 마세요. 대신 의사 코드나 단계별 설명을 제공해주세요.\n`;
+
+  // 고급 문제 처리
+  if (isPlatinum) {
+    prompt += `고급 알고리즘 기법과 최적화 방법도 함께 설명해주세요.\n`;
+  }
+
+  prompt += `\n단계별로 구분하여 작성해주세요.`;
+}
+```
+
+**예상 응답**:
+```markdown
+**1단계: 초기화**
+- n = 수열의 길이
+- arr[] = 입력 수열
+- dp[] = [1, 1, 1, ..., 1] (모두 1로 초기화)
+
+**2단계: DP 배열 채우기**
+for i in range(1, n):
+    for j in range(0, i):
+        if arr[j] < arr[i]:
+            dp[i] = max(dp[i], dp[j] + 1)
+
+**3단계: 최댓값 찾기**
+answer = max(dp)
+
+⏱️ 시간 복잡도: O(n²)
+💾 공간 복잡도: O(n)
+```
+
+#### 난이도별 프롬프트 조정
+
+**Bronze 티어 (레벨 1-5)**:
+- 기본 용어 사용
+- 더 자세한 설명
+- 예시 포함
+
+**Silver/Gold 티어 (레벨 6-15)**:
+- 표준 알고리즘 용어
+- 핵심만 간결하게
+
+**Platinum+ 티어 (레벨 16+)**:
+- 고급 기법 언급
+- 최적화 방법 포함
+- 복잡도 분석 강조
+
+---
+
+### Claude API 에러 처리
+
+#### 주요 에러 코드
+
+| 상태 코드 | 설명 | 원인 | 해결 방법 |
+|----------|------|------|----------|
+| `401 Unauthorized` | 인증 실패 | API 키 오류 | API 키 확인 및 재설정 |
+| `429 Too Many Requests` | 요청 한도 초과 | Rate limit 도달 | 지수 백오프 재시도, 요청 빈도 줄이기 |
+| `500 Internal Server Error` | 서버 오류 | Claude API 문제 | 재시도, 사용자에게 안내 |
+| `timeout` | 요청 시간 초과 | 네트워크 또는 API 지연 | 타임아웃 증가, 재시도 |
+
+#### 에러 처리 구현
+
+```typescript
+async generateHint(
+  problem: Problem,
+  hintLevel: number,
+  userContext?: string
+): Promise<string> {
+  // API 키 확인
+  if (!this.isConfigured()) {
+    throw new ConfigurationError('API 키가 설정되지 않았습니다');
+  }
+
+  try {
+    // 타임아웃 처리
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+
+    const response = await this.client.messages.create(
+      {
+        model: this.model,
+        max_tokens: this.maxTokens,
+        temperature: this.temperature,
+        messages: [
+          {
+            role: 'user',
+            content: this.buildPrompt(problem, hintLevel, userContext)
+          }
+        ]
+      },
+      {
+        signal: controller.signal
+      }
+    );
+
+    clearTimeout(timeoutId);
+
+    // 응답 추출
+    const textContent = response.content.find(c => c.type === 'text');
+    if (!textContent || textContent.type !== 'text') {
+      throw new ClaudeAPIError('Invalid response format from Claude API');
+    }
+
+    return textContent.text;
+  } catch (error: unknown) {
+    // AbortError (타임아웃)
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new TimeoutError('Claude API 응답 시간 초과');
+    }
+
+    // Anthropic SDK 에러
+    if (error && typeof error === 'object' && 'status' in error) {
+      const apiError = error as { status: number; message?: string };
+
+      if (apiError.status === 401) {
+        throw new ClaudeAPIError('Claude API 인증 실패', 401, error);
+      } else if (apiError.status === 429) {
+        throw new ClaudeAPIError('Claude API 요청 한도 초과', 429, error);
+      } else if (apiError.status >= 500) {
+        throw new ClaudeAPIError('Claude API 서버 오류', apiError.status, error);
+      }
+    }
+
+    // 기타 에러
+    throw new ClaudeAPIError(
+      error instanceof Error ? error.message : 'Unknown error occurred',
+      undefined,
+      error
+    );
+  }
+}
+```
+
+#### 사용자 친화적 에러 메시지
+
+```typescript
+// Tool Handler에서 에러 변환
+try {
+  const hint = await hintGenerator.generateHint(problem, hint_level, user_context);
+  return { type: 'text', text: hint };
+} catch (error) {
+  if (error instanceof ClaudeAPIError) {
+    if (error.statusCode === 401) {
+      throw new Error('힌트를 생성할 수 없습니다. API 키를 확인해주세요.');
+    } else if (error.statusCode === 429) {
+      throw new Error('요청이 너무 많습니다. 잠시 후 다시 시도해주세요.');
+    } else {
+      throw new Error('힌트를 생성할 수 없습니다. 잠시 후 다시 시도해주세요.');
+    }
+  }
+  throw error;
+}
+```
+
+#### 재시도 로직 (선택사항)
+
+```typescript
+async generateHintWithRetry(
+  problem: Problem,
+  hintLevel: number,
+  userContext?: string,
+  maxRetries: number = 3
+): Promise<string> {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await this.generateHint(problem, hintLevel, userContext);
+    } catch (error) {
+      // 재시도 가능한 에러인지 확인
+      if (
+        error instanceof ClaudeAPIError &&
+        (error.statusCode === 429 || error.statusCode >= 500)
+      ) {
+        if (attempt < maxRetries - 1) {
+          // 지수 백오프
+          const delay = Math.pow(2, attempt) * 1000;
+          await sleep(delay);
+          continue;
+        }
+      }
+      throw error;
+    }
+  }
+  throw new Error('최대 재시도 횟수 초과');
+}
+```
+
+---
+
+### 비용 최적화
+
+#### 토큰 사용량 최소화
+
+**프롬프트 최적화**:
+- 불필요한 설명 제거
+- 핵심만 간결하게 구성
+- 레벨별 프롬프트 길이 조정
+
+**max_tokens 설정**:
+```typescript
+const maxTokensByLevel = {
+  1: 512,   // 레벨 1: 짧은 힌트
+  2: 1024,  // 레벨 2: 중간 힌트
+  3: 1536   // 레벨 3: 상세 힌트
+};
+```
+
+#### 캐싱 (향후 고려)
+
+동일한 문제-레벨 조합에 대한 힌트 캐싱:
+```typescript
+const cacheKey = `hint:${problem.problemId}:${hintLevel}`;
+const cached = await cache.get(cacheKey);
+if (cached) return cached;
+
+const hint = await this.generateHint(problem, hintLevel, userContext);
+await cache.set(cacheKey, hint, { ttl: 3600 }); // 1시간
+return hint;
+```
+
+**주의**: `userContext`가 있는 경우 캐싱하지 않음 (개인화된 응답)
 
 ---
 
