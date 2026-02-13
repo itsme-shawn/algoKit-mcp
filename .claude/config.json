@@ -1,0 +1,22 @@
+{
+  "description": "cote-mcp 프로젝트 전용 설정 - 최적화된 MCP 서버만 활성화",
+  "mcpServers": {
+    "serena": {
+      "enabled": true,
+      "description": "코드 분석 및 심볼 검색"
+    },
+    "context7": {
+      "enabled": true,
+      "description": "API 문서 검색"
+    },
+    "playwright": {
+      "enabled": false,
+      "reason": "웹 자동화 불필요"
+    }
+  },
+  "disabledPlugins": [
+    "TalkToFigma",
+    "chrome-devtools-mcp",
+    "sequential-thinking"
+  ]
+}
