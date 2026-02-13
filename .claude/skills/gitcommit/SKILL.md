@@ -106,6 +106,21 @@ git log --oneline -5
 - ✅ 올바른 경로: `<프로젝트_루트>/stash/commit/YYYYMMDD_<num>_commit_plan.md`
 - ❌ 잘못된 경로: `/tmp/commit_plan.md` (절대 사용 금지)
 
+**파일 넘버링 규칙**:
+1. 먼저 해당 날짜의 기존 파일들을 확인합니다
+2. 패턴: `YYYYMMDD_*_commit_plan.md` (예: `20260213_*_commit_plan.md`)
+3. 마지막 번호를 찾아 +1 한 값을 사용합니다
+4. 기존 파일이 없으면 1부터 시작합니다
+
+**넘버링 확인 방법**:
+```bash
+# 오늘 날짜의 기존 커밋 계획 파일 확인
+ls -1 stash/commit/YYYYMMDD_*_commit_plan.md 2>/dev/null | tail -1
+
+# 예시: 20260213_3_commit_plan.md가 마지막이면
+# 다음 파일명: 20260213_4_commit_plan.md
+```
+
 **파일 생성 방법**:
 ```bash
 # Bash 명령어 사용
