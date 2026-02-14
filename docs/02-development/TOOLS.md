@@ -147,20 +147,29 @@ const result = await mcpClient.call('generate_hint', {
   problem_id: 11053
 });
 
-// Claude Code가 적절한 레벨 자동 선택
-// - 코드 없음 → Level 1 (문제 분석)
-// - 기초 구현 → Level 1
-// - 부분 구현 → Level 2 (핵심 아이디어)
-// - 거의 완성 → Level 3 (상세 풀이)
+// 🎯 Claude Code가 사용자 상황 판단 → 적절한 1개 레벨만 제시
+// (절대 1,2,3 단계를 동시에 제시하지 않음!)
 
-// hint_guide.hint_levels[selectedLevel].prompt 실행 → 문제별 맞춤 힌트 생성
+// Level 자동 선택 기준:
+// 1️⃣ Level 1 제시: 사용자가 코드 없거나 막혀있을 때
+//    → hint_levels[0].prompt 실행
+//    → 문제 접근법, 입출력 분석 힌트
+
+// 2️⃣ Level 2 제시: 사용자가 "더 필요해", "더 자세히" 요청하거나 부분 구현 언급
+//    → hint_levels[1].prompt 실행
+//    → 핵심 로직, 알고리즘 아이디어
+
+// 3️⃣ Level 3 제시: 사용자가 "정답", "풀이", "코드" 등 최종 답변 요청
+//    → hint_levels[2].prompt 실행
+//    → 상세 구현 가이드, 전체 풀이 방법
 ```
 
 **핵심 기능** (Phase 5 + SRP):
 - 🎯 **문제 특화 힌트**: 모든 DP 문제 동일 힌트 → 문제별 맞춤
 - 🚀 **빠른 응답**: < 500ms (프롬프트만 생성)
 - 🔑 **Zero Configuration**: API 키 불필요
-- 📊 **3단계 시스템**: 사용자 코드 수준에 따라 자동 선택
+- 📊 **단계적 학습**: 한 번에 1개 레벨만 → 사용자가 필요할 때마다 요청
+- 🤖 **자동 판단**: Claude Code가 사용자 상황 분석 → Level 1/2/3 자동 선택
 - 🎨 **단일 책임**: 힌트만 (메타데이터는 analyze_problem)
 
 ---
