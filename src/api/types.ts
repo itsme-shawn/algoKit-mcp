@@ -51,7 +51,7 @@ export interface SearchParams {
   query?: string;
   level_min?: number;
   level_max?: number;
-  tag?: string;
+  tags?: string | string[];
   sort?: 'level' | 'id' | 'average_try';
   direction?: 'asc' | 'desc';
   page?: number;

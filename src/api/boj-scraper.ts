@@ -1,27 +1,30 @@
 /**
- * BOJ 문제 페이지 크롤러
+ * BOJ 문제 페이지 스크래퍼
  *
- * Phase 6 - P6-002: 문제 본문 크롤러 구현
+ * Phase 6 - P6-002: 문제 본문 스크래퍼 구현
  *
  * fetch를 사용하여 BOJ 페이지 HTML을 가져옵니다.
+ * 윤리적 스크래핑을 위해 요청 간 최소 3초 간격을 유지합니다.
  */
 
 /**
- * BOJ 크롤러 설정
+ * BOJ 스크래퍼 설정
  */
 const BOJ_CONFIG = {
   /** BOJ 문제 페이지 URL 템플릿 */
   BASE_URL: 'https://www.acmicpc.net/problem',
-  /** User-Agent (개인 학습 목적 명시) */
-  USER_AGENT: 'cote-mcp-learner/1.0 (Educational Purpose)',
+  /** User-Agent (Chrome 브라우저 형식 - BOJ 요구사항) */
+  USER_AGENT: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
   /** 타임아웃 (밀리초) */
   TIMEOUT: 10000,
   /** 재시도 횟수 */
   MAX_RETRIES: 2,
+  /** 윤리적 스크래핑: 요청 간 최소 간격 (밀리초) */
+  REQUEST_INTERVAL: 3000,
 } as const;
 
 /**
- * BOJ 크롤링 에러
+ * BOJ 스크래핑 에러
  */
 export class BojFetchError extends Error {
   constructor(
@@ -35,15 +38,20 @@ export class BojFetchError extends Error {
 }
 
 /**
- * BOJ 문제 페이지 크롤러
+ * BOJ 문제 페이지 스크래퍼
  */
 export class BOJScraper {
+  /** 마지막 요청 시간 (윤리적 스크래핑을 위한 간격 제어) */
+  private lastRequestTime = 0;
+
   /**
    * 지정된 문제 번호의 HTML 페이지를 가져옵니다.
    *
+   * 윤리적 스크래핑을 위해 요청 간 최소 3초 간격을 유지합니다.
+   *
    * @param problemId - BOJ 문제 번호 (예: 1000)
    * @returns HTML 문자열
-   * @throws {BojFetchError} 크롤링 실패 시
+   * @throws {BojFetchError} 스크래핑 실패 시
    *
    * @example
    * ```typescript
@@ -60,6 +68,9 @@ export class BOJScraper {
       );
     }
 
+    // 윤리적 스크래핑: 마지막 요청으로부터 최소 3초 경과 보장
+    await this._ensureRequestInterval();
+
     const url = `${BOJ_CONFIG.BASE_URL}/${problemId}`;
     let lastError: unknown;
 
@@ -67,6 +78,9 @@ export class BOJScraper {
     for (let attempt = 0; attempt <= BOJ_CONFIG.MAX_RETRIES; attempt++) {
       try {
         const html = await this._fetchWithTimeout(url);
+
+        // 요청 성공 시 현재 시간 기록
+        this.lastRequestTime = Date.now();
         return html;
       } catch (error) {
         lastError = error;
@@ -78,7 +92,7 @@ export class BOJScraper {
 
         // 마지막 시도가 아니면 재시도
         if (attempt < BOJ_CONFIG.MAX_RETRIES) {
-          await this._delay(1000 * (attempt + 1)); // 지수 백오프
+          await this._delay(BOJ_CONFIG.REQUEST_INTERVAL); // 윤리적 스크래핑: 재시도도 3초 간격
           continue;
         }
       }
@@ -165,7 +179,24 @@ export class BOJScraper {
   }
 
   /**
-   * 지연 함수 (재시도 간격)
+   * 윤리적 스크래핑: 마지막 요청으로부터 최소 간격 보장
+   */
+  private async _ensureRequestInterval(): Promise<void> {
+    if (this.lastRequestTime === 0) {
+      // 첫 요청은 즉시 실행
+      return;
+    }
+
+    const elapsed = Date.now() - this.lastRequestTime;
+    const remaining = BOJ_CONFIG.REQUEST_INTERVAL - elapsed;
+
+    if (remaining > 0) {
+      await this._delay(remaining);
+    }
+  }
+
+  /**
+   * 지연 함수 (재시도 간격 및 윤리적 스크래핑 간격)
    */
   private _delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));

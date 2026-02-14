@@ -8,7 +8,7 @@
 ## 목차
 
 1. [solved.ac API](#solvedac-api)
-2. [BOJ 웹 크롤링](#boj-웹-크롤링)
+2. [BOJ 웹 스크래핑](#boj-웹-스크래핑)
 3. [에러 처리](#에러-처리)
 4. [베스트 프랙티스](#베스트-프랙티스)
 
@@ -125,7 +125,7 @@ interface TagDetail {
 
 ---
 
-## BOJ 웹 크롤링
+## BOJ 웹 스크래핑
 
 ### HTML 구조 (Phase 6)
 

@@ -116,7 +116,7 @@ export class ProblemAnalyzer {
       const levelMax = Math.min(30, problem.level + 2);
 
       const results = await this.apiClient.searchProblems({
-        tag: primaryTag,
+        tags: primaryTag,
         level_min: levelMin,
         level_max: levelMax,
         sort: 'level',

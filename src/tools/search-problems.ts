@@ -50,7 +50,10 @@ export const SearchProblemsInputSchema = z.object({
     ])
     .optional()
     .describe('최대 난이도 (숫자 1-30 또는 "실버 3", "Gold I" 형식)'),
-  tag: z.string().optional().describe('알고리즘 태그 (예: "dp", "greedy")'),
+  tags: z
+    .union([z.string(), z.array(z.string())])
+    .optional()
+    .describe('알고리즘 태그 (예: "dp" 또는 ["dp", "greedy", "bfs"])'),
   sort: z.enum(['level', 'id', 'average_try']).optional().describe('정렬 기준'),
   direction: z.enum(['asc', 'desc']).optional().describe('정렬 방향'),
   page: z.number().int().min(1).optional().default(1).describe('페이지 번호 (기본: 1)'),
@@ -124,7 +127,7 @@ export async function searchProblems(input: SearchProblemsInput): Promise<string
       query: input.query,
       level_min: input.level_min,
       level_max: input.level_max,
-      tag: input.tag,
+      tags: input.tags,
       sort: input.sort,
       direction: input.direction,
       page: input.page,

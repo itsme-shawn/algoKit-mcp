@@ -26,7 +26,7 @@
 | `search_problems` | ✅ 완료 | Phase 2 | 문제 검색 |
 | `get_problem` | ✅ 완료 | Phase 2 | 문제 상세 조회 |
 | `search_tags` | ✅ 완료 | Phase 2 | 알고리즘 태그 검색 |
-| `fetch_problem_content` | ✅ 완료 | Phase 6 | BOJ 문제 본문 크롤링 |
+| `fetch_problem_content` | ✅ 완료 | Phase 6 | BOJ 문제 본문 스크래핑 |
 | `analyze_code_submission` | ✅ 완료 | Phase 6 | 사용자 코드 분석 및 피드백 |
 
 ### 아키텍처 특징
@@ -325,10 +325,10 @@ const result = await mcpClient.call('generate_review_template', {
 ### Phase 6: 문제 본문 및 코드 분석
 
 #### fetch_problem_content (진행 중)
-- **설명**: BOJ 문제 본문을 크롤링합니다 (cheerio + fetch)
+- **설명**: BOJ 문제 본문을 스크래핑합니다 (cheerio + fetch)
 - **입력**: `problem_id`, `use_cache`
 - **출력**: `ProblemContent` (제목, 설명, 입출력, 예제, 제한)
-- **상태**: 크롤러 구현 완료 ✅, 캐싱 시스템 대기
+- **상태**: 스크래퍼 구현 완료 ✅, 캐싱 시스템 대기
 
 #### analyze_code_submission (계획)
 - **설명**: 사용자 코드를 분석하고 피드백을 제공합니다

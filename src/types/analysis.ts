@@ -117,6 +117,20 @@ export interface ReviewTemplate {
   related_problems: Problem[];
   /** 힌트 가이드 */
   hint_guide: HintGuide;
+  /** 상세 가이드라인 MCP Resource URI */
+  guideline_uri: string;
+  /** 가이드라인 요약 (빠른 참조용) */
+  guideline_summary: GuidelineSummary;
+}
+
+/**
+ * 가이드라인 요약
+ */
+export interface GuidelineSummary {
+  /** 7단계 문서 구조 */
+  structure: string[];
+  /** 핵심 작성 규칙 */
+  key_rules: string[];
 }
 
 /**

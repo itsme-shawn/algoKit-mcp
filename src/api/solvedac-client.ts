@@ -222,9 +222,10 @@ export class SolvedAcClient {
       queryParts.push(`*${min}..${max}`);
     }
 
-    // tag 필터
-    if (params.tag) {
-      queryParts.push(`#${params.tag}`);
+    // tags 필터 (단일 문자열 또는 배열 지원)
+    if (params.tags) {
+      const tagsArray = Array.isArray(params.tags) ? params.tags : [params.tags];
+      tagsArray.forEach(tag => queryParts.push(`#${tag}`));
     }
 
     if (queryParts.length > 0) {
