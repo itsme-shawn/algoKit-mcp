@@ -20,25 +20,17 @@ import {
   InvalidInputError,
 } from './types.js';
 import { solvedAcLimiter } from '../utils/rate-limiter.js';
+import { LRUCache } from '../utils/lru-cache.js';
 
 const API_BASE_URL = 'https://solved.ac/api/v3';
 const DEFAULT_TIMEOUT = 10000; // 10초
 const MAX_RETRIES = 3;
 
 /**
- * 캐시 엔트리
- */
-interface CacheEntry<T> {
-  data: T;
-  timestamp: number;
-}
-
-/**
  * solved.ac API 클라이언트
  */
 export class SolvedAcClient {
-  private cache: Map<string, CacheEntry<unknown>> = new Map();
-  private cacheTTL: number = 3600000; // 1시간 (밀리초)
+  private cache = new LRUCache<string, unknown>(100, 3600000); // 용량 100, TTL 1시간
 
   /**
    * HTTP GET 요청
@@ -76,7 +68,7 @@ export class SolvedAcClient {
         signal: controller.signal,
         headers: {
           'Accept': 'application/json',
-          'User-Agent': 'cote-mcp-server/1.0',
+          'User-Agent': 'AlgoKit/1.0',
         },
       });
 
@@ -162,27 +154,15 @@ export class SolvedAcClient {
    * 캐시에서 데이터 조회
    */
   private getCached<T>(key: string): T | null {
-    const entry = this.cache.get(key);
-    if (!entry) return null;
-
-    const now = Date.now();
-    if (now - entry.timestamp > this.cacheTTL) {
-      // TTL 만료
-      this.cache.delete(key);
-      return null;
-    }
-
-    return entry.data as T;
+    const data = this.cache.get(key);
+    return data !== undefined ? (data as T) : null;
   }
 
   /**
    * 캐시에 데이터 저장
    */
   private setCache<T>(key: string, data: T): void {
-    this.cache.set(key, {
-      data,
-      timestamp: Date.now(),
-    });
+    this.cache.set(key, data);
   }
 
   /**
@@ -190,6 +170,13 @@ export class SolvedAcClient {
    */
   public clearCache(): void {
     this.cache.clear();
+  }
+
+  /**
+   * 캐시 통계 조회
+   */
+  public getCacheStats() {
+    return this.cache.getStats();
   }
 
   /**
