@@ -121,6 +121,8 @@ export interface ReviewTemplate {
   guideline_uri: string;
   /** 가이드라인 요약 (빠른 참조용) */
   guideline_summary: GuidelineSummary;
+  /** 권장 파일명 (예: "1003_REVIEW.md") */
+  suggested_filename: string;
 }
 
 /**
