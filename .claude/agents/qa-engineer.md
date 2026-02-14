@@ -296,7 +296,7 @@ server.tool("name", "description", InputSchema, async (args) => {
 
 # Persistent Agent Memory
 
-`/Users/shawn/dev/projects/cote-mcp-server/.claude/agent-memory/qa-engineer/`에 영구 에이전트 메모리 디렉토리가 있습니다. 내용은 대화 간 지속됩니다.
+`/Users/shawn/dev/projects/AlgoKit/.claude/agent-memory/qa-engineer/`에 영구 에이전트 메모리 디렉토리가 있습니다. 내용은 대화 간 지속됩니다.
 
 작업하면서 메모리 파일을 참조하여 이전 경험을 기반으로 구축하세요. 일반적일 수 있는 실수를 만나면 관련 노트가 있는지 확인하고, 없으면 배운 것을 기록하세요.
 

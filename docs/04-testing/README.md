@@ -1,6 +1,6 @@
 # 테스트 문서 가이드
 
-**프로젝트**: cote-mcp-server (BOJ 학습 도우미 MCP Server)
+**프로젝트**: AlgoKit (BOJ 학습 도우미 MCP Server)
 **테스트 전략**: TDD (Test-Driven Development)
 **마지막 업데이트**: 2026-02-13
 

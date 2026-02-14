@@ -1,6 +1,6 @@
 # Phase 2: 핵심 도구 테스트 스펙
 
-**프로젝트**: cote-mcp-server
+**프로젝트**: AlgoKit
 **Phase**: 2 - Core Tools (핵심 도구)
 **작성일**: 2026-02-13
 **상태**: 📋 PLANNED
@@ -604,7 +604,7 @@ it('should include problem count in tags', async () => {
 ```typescript
 describe('MCP Server Integration', () => {
   it('should register all Phase 2 tools', async () => {
-    const server = new McpServer({ name: 'cote-mcp' });
+    const server = new McpServer({ name: 'algokit' });
     // 도구 등록 로직
 
     const tools = server.listTools();

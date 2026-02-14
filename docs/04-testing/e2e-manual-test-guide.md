@@ -1,6 +1,6 @@
 # E2E 수동 테스트 가이드
 
-**프로젝트**: cote-mcp: BOJ 학습 도우미 MCP Server
+**프로젝트**: algokit: BOJ 학습 도우미 MCP Server
 **작성일**: 2026-02-14
 **마지막 업데이트**: 2026-02-14 (MCP Inspector 호환성 개선)
 
@@ -105,10 +105,10 @@ npx @modelcontextprotocol/inspector node dist/index.js
 ```json
 {
   "mcpServers": {
-    "cote-mcp": {
+    "algokit": {
       "command": "node",
       "args": [
-        "/Users/shawn/dev/projects/cote-mcp-server/dist/index.js"
+        "/Users/shawn/dev/projects/AlgoKit/dist/index.js"
       ]
     }
   }

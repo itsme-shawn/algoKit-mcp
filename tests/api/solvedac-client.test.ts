@@ -528,7 +528,7 @@ describe('SolvedAcClient', () => {
       expect(options.headers).toBeDefined();
       const headers = options.headers as Record<string, string>;
       expect(headers['Accept']).toBe('application/json');
-      expect(headers['User-Agent']).toContain('cote-mcp-server');
+      expect(headers['User-Agent']).toContain('AlgoKit');
     });
   });
 });

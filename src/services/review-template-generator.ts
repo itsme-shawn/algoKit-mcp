@@ -40,7 +40,7 @@ export class ReviewTemplateGenerator {
       problem_data: problemData,
       related_problems: analysis.similar_problems,
       hint_guide: analysis.hint_guide,
-      guideline_uri: 'cote-mcp://review-guideline',
+      guideline_uri: 'algokit://review-guideline',
       guideline_summary: {
         structure: [
           '문제 정보',

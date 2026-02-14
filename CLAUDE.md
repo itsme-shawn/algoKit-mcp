@@ -1,12 +1,12 @@
-# cote-mcp-server : 코딩테스트 어시스턴트 MCP Server
+# AlgoKit : 코딩테스트 어시스턴트 MCP Server
 
 ## 프로젝트 개요
 
 백준 온라인 저지(BOJ) 알고리즘 문제 학습을 돕는 MCP 서버.
 **백준 ID 기반으로 풀이 이력을 분석하고, 학습 리포트와 문제별 복기 피드백 파일을 자동 생성**
 
-**프로젝트 이름**: `cote-mcp`
-**스킬 Prefix**: `cote:`
+**프로젝트 이름**: `algokit`
+**스킬 Prefix**: `algokit:`
 
 ---
 
@@ -30,8 +30,10 @@
 - **Rate Limiting**: ✅ 구현 완료 (Token Bucket 알고리즘)
   - 산출물: `src/utils/rate-limiter.ts` (300줄), 테스트 24개 통과
   - 문서: `docs/01-planning/rate-limiting-design.md`, `docs/02-development/rate-limiting-implementation.md`
+- **캐싱 최적화**: ✅ 구현 완료 (LRU 캐싱)
+  - 산출물: `src/utils/lru-cache.ts` (304줄), `src/utils/cache-stats.ts` (107줄), 테스트 31개 통과
+  - 성능: O(1) get/set/delete, 메모리 < 500KB (100개 항목 기준)
 - **로깅/모니터링**: 📋 대기 중 (구조화된 로깅 및 메트릭 수집)
-- **캐싱 최적화**: 📋 대기 중 (LRU 캐싱)
 - **analyze_user**: 백준 ID로 전체 풀이 이력 분석 (Phase 7+)
 
 ---
@@ -51,7 +53,7 @@
 ## 프로젝트 구조
 
 ```
-cote-mcp/
+algokit/
 ├── src/
 │   ├── index.ts                   # MCP 서버 진입점
 │   ├── api/                       # solved.ac API 클라이언트
@@ -188,7 +190,7 @@ server.tool("tool_name", "설명", InputSchema, async (args) => {
 
 ### 데이터 흐름
 ```
-User → Claude Code → cote-mcp (JSON + Prompts) → Claude Code (LLM) → User (맞춤 힌트)
+User → Claude Code → algokit (JSON + Prompts) → Claude Code (LLM) → User (맞춤 힌트)
 ```
 
 ### 장점

@@ -1,6 +1,6 @@
 # 📚 문서 인덱스
 
-**cote-mcp: BOJ 학습 도우미 MCP Server**
+**algokit: BOJ 학습 도우미 MCP Server**
 **마지막 업데이트**: 2026-02-15 (Phase 4 Rate Limiting 설계 완료)
 
 ---

@@ -1,6 +1,6 @@
 # Phase 3 TDD Red Phase 테스트 결과
 
-**프로젝트명**: cote-mcp-server
+**프로젝트명**: AlgoKit
 **Phase**: Phase 3 - Keyless Architecture
 **단계**: TDD Red Phase 🔴
 **작성일**: 2026-02-13
@@ -295,8 +295,8 @@ Duration: 166ms
    - MCP 도구 핸들러
 
 ### 구현 가이드 참조
-- **설계 문서**: `/Users/shawn/dev/projects/cote-mcp-server/docs/01-planning/keyless-architecture.md`
-- **테스트 스펙**: `/Users/shawn/dev/projects/cote-mcp-server/docs/04-testing/test-spec-phase3.md`
+- **설계 문서**: `/Users/shawn/dev/projects/AlgoKit/docs/01-planning/keyless-architecture.md`
+- **테스트 스펙**: `/Users/shawn/dev/projects/AlgoKit/docs/04-testing/test-spec-phase3.md`
 - **테스트 코드**: 작성된 4개의 테스트 파일 참조
 
 ### 구현 후 확인 사항

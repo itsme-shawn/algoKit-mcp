@@ -1,4 +1,4 @@
-# cote-mcp-server : Software Requirement Specification
+# AlgoKit : Software Requirement Specification
 
 > 코테 (BOJ) 학습 도우미 MCP Server 의 기능, 비기능적 요구사항, 제한 사항, 목표 등을 상세히 기술한 문서
 

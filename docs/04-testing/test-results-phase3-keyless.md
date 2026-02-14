@@ -1,6 +1,6 @@
 # Phase 3 테스트 결과 (Keyless 아키텍처)
 
-**프로젝트명**: cote-mcp: BOJ 학습 도우미 MCP Server
+**프로젝트명**: algokit: BOJ 학습 도우미 MCP Server
 **Phase**: Phase 3 - Keyless 아키텍처 (문제 분석 및 복습 템플릿 생성)
 **버전**: 1.1
 **테스트 실행일**: 2026-02-13

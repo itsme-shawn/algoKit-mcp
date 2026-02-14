@@ -1,10 +1,10 @@
 {
-  "name": "cote-mcp-server",
+  "name": "algokit-mcp-server",
   "version": "1.0.0",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "cote-mcp": "dist/index.js"
+    "algokit": "dist/index.js"
   },
   "scripts": {
     "build": "tsc && cp -r src/templates dist/ && chmod +x dist/index.js",
@@ -15,7 +15,7 @@
   },
   "keywords": [
     "mcp",
-    "cote",
+    "algokit",
     "baekjoon",
     "boj",
     "algorithm",

@@ -2,7 +2,7 @@
 
 **작성일**: 2026-02-14
 **작성자**: qa-testing-agent
-**프로젝트**: cote-mcp-server
+**프로젝트**: AlgoKit
 
 ---
 

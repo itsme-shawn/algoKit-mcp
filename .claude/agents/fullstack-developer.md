@@ -256,7 +256,7 @@ server.tool(
 
 - 기능 브랜치용 worktree 생성하여 병렬 개발 가능
 - PR 리뷰 시 worktree 사용하여 메인 작업공간 깨끗하게 유지
-- Worktree 이름 패턴: `<프로젝트>-<타입>-<기능>` (예: `cote-mcp-feat-analytics`)
+- Worktree 이름 패턴: `<프로젝트>-<타입>-<기능>` (예: `algokit-feat-analytics`)
 - Worktree 제거 전 항상 변경사항 확인 및 커밋
 - `git worktree list`로 활성 worktree 추적
 - 머지 후 worktree 제거: `git worktree remove <경로>`

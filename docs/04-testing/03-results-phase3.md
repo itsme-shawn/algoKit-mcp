@@ -1,6 +1,6 @@
 # Phase 3 테스트 결과
 
-**프로젝트명**: cote-mcp: BOJ 학습 도우미 MCP Server
+**프로젝트명**: algokit: BOJ 학습 도우미 MCP Server
 **Phase**: Phase 3 - 힌트 및 복습 생성 도구
 **버전**: 1.0
 **테스트 실행일**: 2026-02-13

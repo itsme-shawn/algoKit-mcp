@@ -1,6 +1,6 @@
 # 📝 문서 작성 가이드
 
-**cote-mcp: BOJ 학습 도우미 MCP Server**
+**algokit: BOJ 학습 도우미 MCP Server**
 **버전**: 1.0
 **마지막 업데이트**: 2026-02-13
 
@@ -88,7 +88,7 @@ docs/
 ```markdown
 # 문서 제목
 
-**프로젝트명**: cote-mcp: BOJ 학습 도우미 MCP Server
+**프로젝트명**: algokit: BOJ 학습 도우미 MCP Server
 **버전**: 1.0
 **작성일**: YYYY-MM-DD
 **마지막 업데이트**: YYYY-MM-DD

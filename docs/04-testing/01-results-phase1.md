@@ -1,6 +1,6 @@
 # Phase 1 테스트 결과 및 구현 완료 보고서
 
-**프로젝트**: cote-mcp: BOJ 학습 도우미 MCP Server
+**프로젝트**: algokit: BOJ 학습 도우미 MCP Server
 **작성일**: 2026-02-13
 **마지막 업데이트**: 2026-02-13
 **작성자**: QA Testing Agent, fullstack-developer agent
@@ -172,7 +172,7 @@ const TIER_NAMES = [
 **목적**: MCP 서버 초기화 및 도구 등록
 
 #### 서버 정보
-- **이름**: `cote-mcp-server`
+- **이름**: `AlgoKit`
 - **버전**: `1.0.0`
 - **프로토콜**: MCP (Model Context Protocol)
 

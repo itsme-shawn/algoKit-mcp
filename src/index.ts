@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * cote-mcp-server
+ * AlgoKit
  * 백준 온라인 저지 알고리즘 문제 학습을 돕는 MCP 서버
  */
 
@@ -76,7 +76,7 @@ const analyzeCodeSubmissionToolObj = analyzeCodeSubmissionTool();
  */
 const server = new Server(
   {
-    name: 'cote-mcp-server',
+    name: 'AlgoKit',
     version: '1.0.0',
   },
   {
@@ -163,19 +163,19 @@ server.setRequestHandler(ListResourcesRequestSchema, async () => {
   return {
     resources: [
       {
-        uri: 'cote-mcp://tier-guide',
+        uri: 'algokit://tier-guide',
         name: '난이도 시스템 가이드',
         description: '백준 난이도 레벨(1-30)과 각 티어의 설명, 학습 추천 난이도',
         mimeType: 'application/json',
       },
       {
-        uri: 'cote-mcp://use-cases',
+        uri: 'algokit://use-cases',
         name: '일반적인 사용 패턴',
         description: '초보자 문제, 면접 준비, 일일 문제, 알고리즘별 학습 등 일반적인 검색 패턴',
         mimeType: 'application/json',
       },
       {
-        uri: 'cote-mcp://review-guideline',
+        uri: 'algokit://review-guideline',
         name: '복기 템플릿 작성 가이드라인',
         description: '7단계 구조화된 코딩 테스트 복기 문서 작성 규칙 (MD 형식)',
         mimeType: 'text/markdown',
@@ -190,7 +190,7 @@ server.setRequestHandler(ListResourcesRequestSchema, async () => {
 server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
   const { uri } = request.params;
 
-  if (uri === 'cote-mcp://tier-guide') {
+  if (uri === 'algokit://tier-guide') {
     return {
       contents: [
         {
@@ -255,7 +255,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
     };
   }
 
-  if (uri === 'cote-mcp://use-cases') {
+  if (uri === 'algokit://use-cases') {
     return {
       contents: [
         {
@@ -352,7 +352,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
     };
   }
 
-  if (uri === 'cote-mcp://review-guideline') {
+  if (uri === 'algokit://review-guideline') {
     try {
       // ESM에서 __dirname 대체
       const __filename = fileURLToPath(import.meta.url);
@@ -475,7 +475,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 {
                   status: 'ok',
                   timestamp: new Date().toISOString(),
-                  server: 'cote-mcp-server',
+                  server: 'AlgoKit',
                   version: '1.0.0',
                   tools: [
                     'search_problems',

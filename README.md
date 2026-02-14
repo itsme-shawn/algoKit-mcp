@@ -1,4 +1,4 @@
-# cote-mcp-server
+# AlgoKit
 
 백준 온라인 저지(Baekjoon Online Judge) 알고리즘 문제 학습을 돕는 MCP(Model Context Protocol) 서버입니다.
 
@@ -68,7 +68,7 @@ npm test tests/utils/tier-converter.test.ts
 ## 프로젝트 구조
 
 ```
-cote-mcp-server/
+AlgoKit/
 ├── src/
 │   ├── api/
 │   │   ├── solvedac-client.ts  # solved.ac API 클라이언트

@@ -1,5 +1,5 @@
 {
-  "description": "cote-mcp 프로젝트 전용 설정 - 최적화된 MCP 서버만 활성화",
+  "description": "AlgoKit 프로젝트 전용 설정 - 최적화된 MCP 서버만 활성화",
   "mcpServers": {
     "serena": {
       "enabled": true,
