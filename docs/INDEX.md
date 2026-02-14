@@ -1,7 +1,7 @@
-# 📚 문서 인덱스
+# 📚 cote-mcp Documentation Index
 
-**algokit: BOJ 학습 도우미 MCP Server**
-**마지막 업데이트**: 2026-02-15 (Phase 4 Rate Limiting 설계 완료)
+**마지막 업데이트**: 2026-02-16 (문서 정리 완료 - 50% 축소)
+**총 문서**: 17개 (정리 전: 34개 → 정리 후: 17개)
 
 ---
 
