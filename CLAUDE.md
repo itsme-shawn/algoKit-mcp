@@ -29,10 +29,11 @@
 ### 3. 향후 계획 (Phase 4) 🚧 진행 중
 - **Rate Limiting**: ✅ 구현 완료 (Token Bucket 알고리즘)
   - 산출물: `src/utils/rate-limiter.ts` (300줄), 테스트 24개 통과
-  - 문서: `docs/01-planning/rate-limiting-design.md`, `docs/02-development/rate-limiting-implementation.md`
+  - 문서: `docs/01-planning/rate-limiting.md` (설계+구현 통합)
 - **캐싱 최적화**: ✅ 구현 완료 (LRU 캐싱)
   - 산출물: `src/utils/lru-cache.ts` (304줄), `src/utils/cache-stats.ts` (107줄), 테스트 31개 통과
   - 성능: O(1) get/set/delete, 메모리 < 500KB (100개 항목 기준)
+  - 문서: `docs/01-planning/lru-caching.md` (설계+구현 통합)
 - **로깅/모니터링**: 📋 대기 중 (구조화된 로깅 및 메트릭 수집)
 - **analyze_user**: 백준 ID로 전체 풀이 이력 분석 (Phase 7+)
 
@@ -223,13 +224,15 @@ User → Claude Code → algokit (JSON + Prompts) → Claude Code (LLM) → User
 
 ### 기획 및 설계
 - **프로젝트 목적**: [docs/01-planning/PRD.md](docs/01-planning/PRD.md)
-- **시스템 구조**: [docs/01-planning/architecture.md](docs/01-planning/architecture.md)
-- **Rate Limiting 설계**: [docs/01-planning/rate-limiting-design.md](docs/01-planning/rate-limiting-design.md) 🆕
+- **시스템 구조**: [docs/01-planning/architecture.md](docs/01-planning/architecture.md) (Keyless, 프롬프트 기반)
+- **Rate Limiting**: [docs/01-planning/rate-limiting.md](docs/01-planning/rate-limiting.md) (설계+구현)
+- **LRU 캐싱**: [docs/01-planning/lru-caching.md](docs/01-planning/lru-caching.md) (설계+구현)
+- **Programmers 분석**: [docs/01-planning/programmers-analysis.md](docs/01-planning/programmers-analysis.md) (향후 계획)
 
 ### 개발 가이드
 - **API 사용법**: [docs/02-development/api-integration.md](docs/02-development/api-integration.md)
 - **MCP 도구**: [docs/02-development/tools-reference.md](docs/02-development/tools-reference.md)
-- **Rate Limiting 구현**: [docs/02-development/rate-limiting-implementation.md](docs/02-development/rate-limiting-implementation.md) 🆕
+- **Web Scraping**: [docs/02-development/web-scraping-guide.md](docs/02-development/web-scraping-guide.md) (윤리적 스크래핑)
 
 ### 프로젝트 관리
 - **현재 작업**: [docs/03-project-management/tasks.md](docs/03-project-management/tasks.md)

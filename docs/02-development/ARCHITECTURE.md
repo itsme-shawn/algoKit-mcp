@@ -360,9 +360,9 @@ class SolvedAcClient {
      difficulty: { tier: "Silver II", ... },
      tag_info: { primary: "DP", description: "..." },
      hint_levels: [
-       { level: 1, title: "패턴 인식", prompt: "..." },
-       { level: 2, title: "핵심 통찰", prompt: "..." },
-       { level: 3, title: "풀이 전략", prompt: "..." }
+       { level: 1, title: "문제 분석", prompt: "..." },
+       { level: 2, title: "핵심 아이디어", prompt: "..." },
+       { level: 3, title: "상세 풀이", prompt: "..." }
      ],
      similar_problems: [...]
    }
@@ -459,7 +459,7 @@ HINT_PATTERNS['dp'] = {
 buildHintGuides(problem) {
   return [{
     level: 1,
-    title: '패턴 인식',
+    title: '문제 분석',
     prompt: `
       이 문제는 ${problem.tags[0].name} 문제입니다.
       난이도: ${problem.tier}
