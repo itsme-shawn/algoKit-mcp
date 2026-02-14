@@ -1,21 +1,28 @@
 /**
- * ProblemAnalyzer 서비스 테스트 (Keyless Architecture)
+ * ProblemAnalyzer 서비스 테스트 (프롬프트 기반 아키텍처)
  *
  * 테스트 범위:
- * - 문제 분석 및 힌트 포인트 생성
- * - 난이도 컨텍스트 생성
- * - 알고리즘 정보 추출
- * - 유사 문제 추천
- * - Edge Cases
+ * - 기본 분석 (문제 데이터, 난이도, 태그, 유사 문제)
+ * - 힌트 가이드 구조 (3단계 레벨, 라벨, 프롬프트)
+ * - 템플릿 변수 치환 (problemId, problemTitle, tags, tier 등)
+ * - 컨텍스트 요약
+ * - 유사 문제 검색 로직
+ * - 난이도 컨텍스트 (백분위 계산)
+ * - 결정적 출력 (같은 입력 → 같은 출력)
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ProblemAnalyzer } from '../../src/services/problem-analyzer.js';
 import type { SolvedAcClient } from '../../src/api/solvedac-client.js';
-import { mockProblem1000, mockProblem1927, mockProblem11053, mockSearchResult } from '../__mocks__/solved-ac-responses.js';
+import {
+  mockProblem1000,
+  mockProblem1927,
+  mockProblem11053,
+  mockSearchResult,
+} from '../__mocks__/solved-ac-responses.js';
 import type { Problem } from '../../src/api/types.js';
 
-describe('ProblemAnalyzer (Keyless)', () => {
+describe('ProblemAnalyzer (프롬프트 기반)', () => {
   let analyzer: ProblemAnalyzer;
   let mockApiClient: {
     getProblem: ReturnType<typeof vi.fn>;
@@ -30,352 +37,237 @@ describe('ProblemAnalyzer (Keyless)', () => {
     analyzer = new ProblemAnalyzer(mockApiClient as unknown as SolvedAcClient);
   });
 
-  describe('TC-KL-1.1~1.3: 기본 기능 - 문제 분석', () => {
-    it('TC-KL-1.1: DP 문제 분석 (1463번 - 1로 만들기, Silver III)', async () => {
+  describe('1. 기본 분석', () => {
+    it('DP 문제 분석 (mockProblem11053, level 14, Gold II, dp tag)', async () => {
       // Given: DP 문제 데이터
-      const mockDPProblem: Problem = {
-        problemId: 1463,
-        titleKo: '1로 만들기',
-        level: 8, // Silver III
-        tags: [
-          {
-            key: 'dp',
-            displayNames: [{ language: 'ko', name: '다이나믹 프로그래밍' }],
-            problemCount: 1500,
-          },
-        ],
-        acceptedUserCount: 89000,
-        averageTries: 2.8,
-        isSolvable: true,
-        isPartial: false,
-      };
-      mockApiClient.getProblem.mockResolvedValue(mockDPProblem);
-      mockApiClient.searchProblems.mockResolvedValue({ count: 0, items: [], page: 1 });
+      mockApiClient.getProblem.mockResolvedValue(mockProblem11053);
+      mockApiClient.searchProblems.mockResolvedValue({
+        count: 0,
+        items: [],
+        page: 1,
+      });
 
-      // When
-      const analysis = await analyzer.analyze(1463, false);
+      // When: 문제 분석
+      const analysis = await analyzer.analyze(11053, false);
 
-      // Then: 구조 검증
+      // Then: 반환 구조 검증
       expect(analysis).toHaveProperty('problem');
       expect(analysis).toHaveProperty('difficulty');
-      expect(analysis).toHaveProperty('algorithm');
-      expect(analysis).toHaveProperty('hint_points');
-      expect(analysis).toHaveProperty('constraints');
-      expect(analysis).toHaveProperty('gotchas');
+      expect(analysis).toHaveProperty('tags');
       expect(analysis).toHaveProperty('similar_problems');
+      expect(analysis).toHaveProperty('hint_guide');
 
-      // 문제 정보
-      expect(analysis.problem.problemId).toBe(1463);
-      expect(analysis.problem.titleKo).toBe('1로 만들기');
+      // problem 검증
+      expect(analysis.problem.problemId).toBe(11053);
+      expect(analysis.problem.titleKo).toBe('가장 긴 증가하는 부분 수열');
 
-      // 난이도 컨텍스트
-      expect(analysis.difficulty.tier).toBe('Silver III');
-      expect(analysis.difficulty.level).toBe(8);
-      expect(analysis.difficulty.emoji).toBe('⚪');
+      // difficulty 검증
+      expect(analysis.difficulty.tier).toBe('Gold II');
+      expect(analysis.difficulty.level).toBe(14);
+      expect(analysis.difficulty.emoji).toBe('🟡');
 
-      // 알고리즘 정보
-      expect(analysis.algorithm.primary_tags).toContain('다이나믹 프로그래밍');
-      expect(analysis.algorithm.tag_explanations).toHaveProperty('dp');
-
-      // 힌트 포인트 (3개: Level 1-3)
-      expect(analysis.hint_points).toHaveLength(3);
+      // tags 검증
+      expect(analysis.tags).toHaveLength(1);
+      expect(analysis.tags[0].key).toBe('dp');
+      expect(analysis.tags[0].name_ko).toBe('다이나믹 프로그래밍');
     });
 
-    it('TC-KL-1.2: Greedy 문제 분석', async () => {
-      // Given: Greedy 문제 데이터
-      const mockGreedyProblem: Problem = {
-        problemId: 11399,
-        titleKo: 'ATM',
-        level: 7, // Silver IV
-        tags: [
-          {
-            key: 'greedy',
-            displayNames: [{ language: 'ko', name: '그리디 알고리즘' }],
-          },
-        ],
-        acceptedUserCount: 60000,
-        averageTries: 1.5,
-        isSolvable: true,
-        isPartial: false,
-      };
-      mockApiClient.getProblem.mockResolvedValue(mockGreedyProblem);
-      mockApiClient.searchProblems.mockResolvedValue({ count: 0, items: [] });
-
-      // When
-      const analysis = await analyzer.analyze(11399, false);
-
-      // Then
-      expect(analysis.algorithm.primary_tags).toContain('그리디 알고리즘');
-      expect(analysis.hint_points[0].key).toMatch(/그리디|greedy/i);
-    });
-
-    it('TC-KL-1.3: Graph 문제 분석', async () => {
-      // Given: Graph 문제 데이터
-      const mockGraphProblem: Problem = {
-        problemId: 1260,
-        titleKo: 'DFS와 BFS',
-        level: 9, // Silver II
-        tags: [
-          {
-            key: 'graphs',
-            displayNames: [{ language: 'ko', name: '그래프 이론' }],
-          },
-          {
-            key: 'graph_traversal',
-            displayNames: [{ language: 'ko', name: '그래프 탐색' }],
-          },
-        ],
-        acceptedUserCount: 100000,
-        averageTries: 2.1,
-        isSolvable: true,
-        isPartial: false,
-      };
-      mockApiClient.getProblem.mockResolvedValue(mockGraphProblem);
-      mockApiClient.searchProblems.mockResolvedValue({ count: 0, items: [] });
-
-      // When
-      const analysis = await analyzer.analyze(1260, false);
-
-      // Then
-      expect(analysis.algorithm.primary_tags).toContain('그래프 이론');
-      expect(analysis.hint_points[0].key).toMatch(/그래프|graph/i);
-    });
-  });
-
-  describe('TC-KL-1.4~1.6: 힌트 포인트 생성', () => {
-    beforeEach(() => {
-      mockApiClient.getProblem.mockResolvedValue(mockProblem11053);
-      mockApiClient.searchProblems.mockResolvedValue({ count: 0, items: [] });
-    });
-
-    it('TC-KL-1.4: Level 1 힌트 (패턴 인식)', async () => {
-      // When
-      const analysis = await analyzer.analyze(11053, false);
-
-      // Then
-      const level1Hint = analysis.hint_points.find(h => h.level === 1);
-      expect(level1Hint).toBeDefined();
-      expect(level1Hint!.level).toBe(1);
-      expect(level1Hint!.type).toBe('pattern');
-      expect(level1Hint!.key).toBeTruthy();
-      expect(level1Hint!.detail).toBeTruthy();
-    });
-
-    it('TC-KL-1.5: Level 2 힌트 (핵심 통찰)', async () => {
-      // When
-      const analysis = await analyzer.analyze(11053, false);
-
-      // Then
-      const level2Hint = analysis.hint_points.find(h => h.level === 2);
-      expect(level2Hint).toBeDefined();
-      expect(level2Hint!.level).toBe(2);
-      expect(level2Hint!.type).toBe('insight');
-      expect(level2Hint!.key).toBeTruthy();
-      expect(level2Hint!.detail).toBeTruthy();
-      // Level 2는 예시를 포함할 수 있음
-      expect(level2Hint).toHaveProperty('example');
-    });
-
-    it('TC-KL-1.6: Level 3 힌트 (상세 전략)', async () => {
-      // When
-      const analysis = await analyzer.analyze(11053, false);
-
-      // Then
-      const level3Hint = analysis.hint_points.find(h => h.level === 3);
-      expect(level3Hint).toBeDefined();
-      expect(level3Hint!.level).toBe(3);
-      expect(level3Hint!.type).toBe('strategy');
-      expect(level3Hint!.key).toBeTruthy();
-      // Level 3는 단계별 전략 포함
-      expect(level3Hint!.steps).toBeDefined();
-      expect(level3Hint!.steps).toBeInstanceOf(Array);
-      expect(level3Hint!.steps!.length).toBeGreaterThan(0);
-    });
-  });
-
-  describe('TC-KL-1.7~1.10: 난이도 컨텍스트', () => {
-    it('TC-KL-1.7: Bronze 문제 컨텍스트', async () => {
-      // Given
+    it('입문 문제 분석 (mockProblem1000, level 1, Bronze V, math+implementation)', async () => {
+      // Given: 입문 문제 데이터
       mockApiClient.getProblem.mockResolvedValue(mockProblem1000);
-      mockApiClient.searchProblems.mockResolvedValue({ count: 0, items: [] });
+      mockApiClient.searchProblems.mockResolvedValue({
+        count: 0,
+        items: [],
+        page: 1,
+      });
 
-      // When
+      // When: 문제 분석
       const analysis = await analyzer.analyze(1000, false);
 
-      // Then
-      expect(analysis.difficulty.tier).toContain('Bronze');
+      // Then: difficulty 검증
+      expect(analysis.difficulty.tier).toBe('Bronze V');
+      expect(analysis.difficulty.level).toBe(1);
       expect(analysis.difficulty.emoji).toBe('🟤');
-      expect(analysis.difficulty.level).toBeLessThanOrEqual(5);
-      expect(analysis.difficulty.percentile).toMatch(/입문/i);
+      expect(analysis.difficulty.percentile).toBe('입문');
+
+      // tags 검증 (2개)
+      expect(analysis.tags).toHaveLength(2);
+      expect(analysis.tags.map(t => t.key)).toContain('math');
+      expect(analysis.tags.map(t => t.key)).toContain('implementation');
     });
 
-    it('TC-KL-1.8: Silver 문제 컨텍스트', async () => {
-      // Given
+    it('Silver 문제 분석 (mockProblem1927, level 10, Silver I, data_structures+priority_queue)', async () => {
+      // Given: Silver 문제 데이터
       mockApiClient.getProblem.mockResolvedValue(mockProblem1927);
-      mockApiClient.searchProblems.mockResolvedValue({ count: 0, items: [] });
+      mockApiClient.searchProblems.mockResolvedValue({
+        count: 0,
+        items: [],
+        page: 1,
+      });
 
-      // When
+      // When: 문제 분석
       const analysis = await analyzer.analyze(1927, false);
 
-      // Then
-      expect(analysis.difficulty.tier).toContain('Silver');
+      // Then: difficulty 검증
+      expect(analysis.difficulty.tier).toBe('Silver I');
+      expect(analysis.difficulty.level).toBe(10);
       expect(analysis.difficulty.emoji).toBe('⚪');
-      expect(analysis.difficulty.level).toBeGreaterThanOrEqual(6);
-      expect(analysis.difficulty.level).toBeLessThanOrEqual(10);
-    });
 
-    it('TC-KL-1.9: Gold 문제 컨텍스트', async () => {
-      // Given
+      // tags 검증 (2개)
+      expect(analysis.tags).toHaveLength(2);
+      expect(analysis.tags.map(t => t.key)).toContain('data_structures');
+      expect(analysis.tags.map(t => t.key)).toContain('priority_queue');
+    });
+  });
+
+  describe('2. 힌트 가이드 구조', () => {
+    beforeEach(() => {
       mockApiClient.getProblem.mockResolvedValue(mockProblem11053);
-      mockApiClient.searchProblems.mockResolvedValue({ count: 0, items: [] });
+      mockApiClient.searchProblems.mockResolvedValue({
+        count: 0,
+        items: [],
+        page: 1,
+      });
+    });
 
+    it('hint_guide.hint_levels가 3개 레벨 모두 존재', async () => {
       // When
       const analysis = await analyzer.analyze(11053, false);
 
       // Then
-      expect(analysis.difficulty.tier).toContain('Gold');
-      expect(analysis.difficulty.emoji).toBe('🟡');
-      expect(analysis.difficulty.level).toBeGreaterThanOrEqual(11);
-      expect(analysis.difficulty.level).toBeLessThanOrEqual(15);
+      expect(analysis.hint_guide.hint_levels).toHaveLength(3);
+      expect(analysis.hint_guide.hint_levels.map(h => h.level)).toEqual([1, 2, 3]);
     });
 
-    it('TC-KL-1.10: Platinum+ 문제 컨텍스트', async () => {
-      // Given: Platinum 문제
-      const mockPlatinumProblem: Problem = {
-        problemId: 2887,
-        titleKo: '행성 터널',
-        level: 16, // Platinum V
-        tags: [
-          {
-            key: 'graphs',
-            displayNames: [{ language: 'ko', name: '그래프 이론' }],
-          },
-        ],
-        acceptedUserCount: 10000,
-        averageTries: 3.5,
-        isSolvable: true,
-        isPartial: false,
-      };
-      mockApiClient.getProblem.mockResolvedValue(mockPlatinumProblem);
-      mockApiClient.searchProblems.mockResolvedValue({ count: 0, items: [] });
-
+    it('hint_levels[0].level=1, label="패턴 인식"', async () => {
       // When
-      const analysis = await analyzer.analyze(2887, false);
+      const analysis = await analyzer.analyze(11053, false);
 
       // Then
-      expect(analysis.difficulty.tier).toContain('Platinum');
-      expect(analysis.difficulty.emoji).toBe('🟢');
-      expect(analysis.difficulty.level).toBeGreaterThanOrEqual(16);
-      expect(analysis.difficulty.level).toBeLessThanOrEqual(20);
-      expect(analysis.difficulty.percentile).toMatch(/중상급|고급/i);
+      const level1 = analysis.hint_guide.hint_levels[0];
+      expect(level1.level).toBe(1);
+      expect(level1.label).toBe('패턴 인식');
+      expect(level1.prompt).toBeTruthy();
+      expect(level1.prompt.length).toBeGreaterThan(0);
+    });
+
+    it('hint_levels[1].level=2, label="핵심 통찰"', async () => {
+      // When
+      const analysis = await analyzer.analyze(11053, false);
+
+      // Then
+      const level2 = analysis.hint_guide.hint_levels[1];
+      expect(level2.level).toBe(2);
+      expect(level2.label).toBe('핵심 통찰');
+      expect(level2.prompt).toBeTruthy();
+      expect(level2.prompt.length).toBeGreaterThan(0);
+    });
+
+    it('hint_levels[2].level=3, label="풀이 전략"', async () => {
+      // When
+      const analysis = await analyzer.analyze(11053, false);
+
+      // Then
+      const level3 = analysis.hint_guide.hint_levels[2];
+      expect(level3.level).toBe(3);
+      expect(level3.label).toBe('풀이 전략');
+      expect(level3.prompt).toBeTruthy();
+      expect(level3.prompt.length).toBeGreaterThan(0);
     });
   });
 
-  describe('TC-KL-1.11~1.14: 태그 매핑', () => {
-    it('TC-KL-1.11: DP 태그 → 힌트 패턴', async () => {
-      // Given
-      const mockDPProblem: Problem = {
-        ...mockProblem11053,
-        tags: [
-          {
-            key: 'dp',
-            displayNames: [{ language: 'ko', name: '다이나믹 프로그래밍' }],
-          },
-        ],
-      };
-      mockApiClient.getProblem.mockResolvedValue(mockDPProblem);
-      mockApiClient.searchProblems.mockResolvedValue({ count: 0, items: [] });
+  describe('3. 템플릿 변수 치환', () => {
+    beforeEach(() => {
+      mockApiClient.getProblem.mockResolvedValue(mockProblem11053);
+      mockApiClient.searchProblems.mockResolvedValue({
+        count: 0,
+        items: [],
+        page: 1,
+      });
+    });
 
+    it('Level 1 프롬프트에 problemId, problemTitle 포함', async () => {
       // When
       const analysis = await analyzer.analyze(11053, false);
 
       // Then
-      expect(analysis.algorithm.primary_tags).toContain('다이나믹 프로그래밍');
-      expect(analysis.algorithm.tag_explanations).toHaveProperty('dp');
-      expect(analysis.hint_points[0].key).toMatch(/동적|dp/i);
+      const level1Prompt = analysis.hint_guide.hint_levels[0].prompt;
+      expect(level1Prompt).toContain('11053');
+      expect(level1Prompt).toContain('가장 긴 증가하는 부분 수열');
     });
 
-    it('TC-KL-1.12: Greedy 태그 → 힌트 패턴', async () => {
-      // Given
-      const mockGreedyProblem: Problem = {
-        ...mockProblem1000,
-        problemId: 11399,
-        titleKo: 'ATM',
-        level: 7,
-        tags: [
-          {
-            key: 'greedy',
-            displayNames: [{ language: 'ko', name: '그리디 알고리즘' }],
-          },
-        ],
-      };
-      mockApiClient.getProblem.mockResolvedValue(mockGreedyProblem);
-      mockApiClient.searchProblems.mockResolvedValue({ count: 0, items: [] });
-
-      // When
-      const analysis = await analyzer.analyze(11399, false);
-
-      // Then
-      expect(analysis.algorithm.primary_tags).toContain('그리디 알고리즘');
-      expect(analysis.algorithm.tag_explanations).toHaveProperty('greedy');
-    });
-
-    it('TC-KL-1.13: Graph 태그 → 힌트 패턴', async () => {
-      // Given
-      const mockGraphProblem: Problem = {
-        ...mockProblem1000,
-        problemId: 1260,
-        titleKo: 'DFS와 BFS',
-        level: 9,
-        tags: [
-          {
-            key: 'graphs',
-            displayNames: [{ language: 'ko', name: '그래프 이론' }],
-          },
-        ],
-      };
-      mockApiClient.getProblem.mockResolvedValue(mockGraphProblem);
-      mockApiClient.searchProblems.mockResolvedValue({ count: 0, items: [] });
-
-      // When
-      const analysis = await analyzer.analyze(1260, false);
-
-      // Then
-      expect(analysis.algorithm.primary_tags).toContain('그래프 이론');
-      expect(analysis.algorithm.tag_explanations).toHaveProperty('graphs');
-    });
-
-    it('TC-KL-1.14: 복합 태그 (DP + Graph)', async () => {
-      // Given
-      const mockComplexProblem: Problem = {
-        ...mockProblem11053,
-        tags: [
-          {
-            key: 'dp',
-            displayNames: [{ language: 'ko', name: '다이나믹 프로그래밍' }],
-          },
-          {
-            key: 'graphs',
-            displayNames: [{ language: 'ko', name: '그래프 이론' }],
-          },
-        ],
-      };
-      mockApiClient.getProblem.mockResolvedValue(mockComplexProblem);
-      mockApiClient.searchProblems.mockResolvedValue({ count: 0, items: [] });
-
+    it('Level 2 프롬프트에 tags(한글) 포함', async () => {
       // When
       const analysis = await analyzer.analyze(11053, false);
 
       // Then
-      expect(analysis.algorithm.primary_tags).toContain('다이나믹 프로그래밍');
-      expect(analysis.algorithm.primary_tags).toContain('그래프 이론');
-      expect(analysis.algorithm.tag_explanations).toHaveProperty('dp');
-      expect(analysis.algorithm.tag_explanations).toHaveProperty('graphs');
+      const level2Prompt = analysis.hint_guide.hint_levels[1].prompt;
+      expect(level2Prompt).toContain('다이나믹 프로그래밍');
+    });
+
+    it('미치환 변수 없음: /\\{\\w+\\}/ 패턴이 남아있지 않은지 확인', async () => {
+      // When
+      const analysis = await analyzer.analyze(11053, false);
+
+      // Then: 모든 힌트 레벨 프롬프트 검증
+      analysis.hint_guide.hint_levels.forEach(hintLevel => {
+        expect(hintLevel.prompt).not.toMatch(/\{\w+\}/);
+      });
+
+      // context 검증
+      expect(analysis.hint_guide.context).not.toMatch(/\{\w+\}/);
+
+      // review_prompts 검증
+      Object.values(analysis.hint_guide.review_prompts).forEach(prompt => {
+        expect(prompt).not.toMatch(/\{\w+\}/);
+      });
     });
   });
 
-  describe('TC-KL-1.15~1.17: 유사 문제 추천', () => {
-    it('TC-KL-1.15: 같은 태그 문제 검색', async () => {
+  describe('4. 컨텍스트 요약', () => {
+    beforeEach(() => {
+      mockApiClient.getProblem.mockResolvedValue(mockProblem11053);
+      mockApiClient.searchProblems.mockResolvedValue({
+        count: 0,
+        items: [],
+        page: 1,
+      });
+    });
+
+    it('hint_guide.context에 문제번호, 제목, 티어 포함', async () => {
+      // When
+      const analysis = await analyzer.analyze(11053, false);
+
+      // Then
+      const context = analysis.hint_guide.context;
+      expect(context).toContain('11053');
+      expect(context).toContain('가장 긴 증가하는 부분 수열');
+      expect(context).toContain('Gold II');
+      expect(context).toContain('🟡');
+    });
+
+    it('hint_guide.review_prompts 5개 필드 모두 존재', async () => {
+      // When
+      const analysis = await analyzer.analyze(11053, false);
+
+      // Then
+      const reviewPrompts = analysis.hint_guide.review_prompts;
+      expect(reviewPrompts).toHaveProperty('solution_approach');
+      expect(reviewPrompts).toHaveProperty('time_complexity');
+      expect(reviewPrompts).toHaveProperty('space_complexity');
+      expect(reviewPrompts).toHaveProperty('key_insights');
+      expect(reviewPrompts).toHaveProperty('difficulties');
+
+      // 모든 프롬프트가 비어있지 않은지 확인
+      Object.values(reviewPrompts).forEach(prompt => {
+        expect(prompt).toBeTruthy();
+        expect(prompt.length).toBeGreaterThan(0);
+      });
+    });
+  });
+
+  describe('5. 유사 문제', () => {
+    it('includeSimilar=true: searchProblems 호출됨', async () => {
       // Given
       mockApiClient.getProblem.mockResolvedValue(mockProblem11053);
       mockApiClient.searchProblems.mockResolvedValue({
@@ -384,6 +276,7 @@ describe('ProblemAnalyzer (Keyless)', () => {
           { ...mockProblem11053, problemId: 2579, titleKo: '계단 오르기' },
           { ...mockProblem11053, problemId: 1003, titleKo: '피보나치 함수' },
         ],
+        page: 1,
       });
 
       // When
@@ -391,132 +284,135 @@ describe('ProblemAnalyzer (Keyless)', () => {
 
       // Then
       expect(mockApiClient.searchProblems).toHaveBeenCalled();
-      expect(analysis.similar_problems).toBeDefined();
-      expect(analysis.similar_problems.length).toBeGreaterThan(0);
+      expect(analysis.similar_problems).toHaveLength(2);
+      expect(analysis.similar_problems.map(p => p.problemId)).toContain(2579);
+      expect(analysis.similar_problems.map(p => p.problemId)).toContain(1003);
     });
 
-    it('TC-KL-1.16: 비슷한 난이도 필터링 (±2 티어)', async () => {
-      // Given: Gold II 문제 (level 14)
-      mockApiClient.getProblem.mockResolvedValue(mockProblem11053);
-      mockApiClient.searchProblems.mockResolvedValue({ count: 0, items: [] });
-
-      // When
-      await analyzer.analyze(11053, true);
-
-      // Then: searchProblems가 ±2 티어 범위로 호출되었는지 확인
-      expect(mockApiClient.searchProblems).toHaveBeenCalledWith(
-        expect.objectContaining({
-          tag: 'dp',
-          level_min: expect.any(Number),
-          level_max: expect.any(Number),
-        })
-      );
-    });
-
-    it('TC-KL-1.17: 최대 5개 제한', async () => {
-      // Given: 유사 문제 6개 반환
-      const manyProblems = Array.from({ length: 6 }, (_, i) => ({
-        ...mockProblem11053,
-        problemId: 10000 + i,
-        titleKo: `문제 ${i}`,
-      }));
+    it('includeSimilar=false: searchProblems 호출 안 됨', async () => {
+      // Given
       mockApiClient.getProblem.mockResolvedValue(mockProblem11053);
       mockApiClient.searchProblems.mockResolvedValue({
-        count: 6,
-        items: manyProblems,
+        count: 0,
+        items: [],
+        page: 1,
       });
+
+      // When
+      const analysis = await analyzer.analyze(11053, false);
+
+      // Then
+      expect(mockApiClient.searchProblems).not.toHaveBeenCalled();
+      expect(analysis.similar_problems).toEqual([]);
+    });
+
+    it('API 에러 시 빈 배열 반환', async () => {
+      // Given
+      mockApiClient.getProblem.mockResolvedValue(mockProblem11053);
+      mockApiClient.searchProblems.mockRejectedValue(new Error('API Error'));
 
       // When
       const analysis = await analyzer.analyze(11053, true);
 
-      // Then: 최대 5개만 반환
-      expect(analysis.similar_problems.length).toBeLessThanOrEqual(5);
+      // Then: 에러가 던져지지 않고 빈 배열 반환
+      expect(analysis.similar_problems).toEqual([]);
     });
   });
 
-  describe('TC-KL-1.18~1.21: Edge Cases', () => {
-    it('TC-KL-1.18: 태그 없는 문제', async () => {
-      // Given
-      const mockNoTagProblem: Problem = {
-        ...mockProblem1000,
-        tags: [],
-      };
-      mockApiClient.getProblem.mockResolvedValue(mockNoTagProblem);
-      mockApiClient.searchProblems.mockResolvedValue({ count: 0, items: [] });
-
-      // When
-      const analysis = await analyzer.analyze(1000, false);
-
-      // Then: 에러 발생하지 않음
-      expect(analysis).toBeDefined();
-      expect(analysis.algorithm.primary_tags).toBeDefined();
-      expect(analysis.hint_points).toHaveLength(3);
-    });
-
-    it('TC-KL-1.19: 알 수 없는 태그', async () => {
-      // Given
-      const mockUnknownTagProblem: Problem = {
-        ...mockProblem1000,
-        tags: [
-          {
-            key: 'unknown_tag',
-            displayNames: [{ language: 'ko', name: '알 수 없는 태그' }],
-          },
-        ],
-      };
-      mockApiClient.getProblem.mockResolvedValue(mockUnknownTagProblem);
-      mockApiClient.searchProblems.mockResolvedValue({ count: 0, items: [] });
-
-      // When
-      const analysis = await analyzer.analyze(1000, false);
-
-      // Then: fallback 처리
-      expect(analysis).toBeDefined();
-      expect(analysis.algorithm.primary_tags).toContain('알 수 없는 태그');
-      expect(analysis.hint_points).toHaveLength(3);
-    });
-
-    it('TC-KL-1.20: 매우 쉬운 문제 (Bronze V)', async () => {
+  describe('6. 난이도 컨텍스트', () => {
+    it('Bronze (level 1): percentile="입문"', async () => {
       // Given
       mockApiClient.getProblem.mockResolvedValue(mockProblem1000);
-      mockApiClient.searchProblems.mockResolvedValue({ count: 0, items: [] });
+      mockApiClient.searchProblems.mockResolvedValue({
+        count: 0,
+        items: [],
+        page: 1,
+      });
 
       // When
       const analysis = await analyzer.analyze(1000, false);
 
       // Then
-      expect(analysis.difficulty.tier).toBe('Bronze V');
       expect(analysis.difficulty.level).toBe(1);
-      expect(analysis.difficulty.percentile).toMatch(/입문/i);
+      expect(analysis.difficulty.tier).toBe('Bronze V');
+      expect(analysis.difficulty.percentile).toBe('입문');
     });
 
-    it('TC-KL-1.21: 매우 어려운 문제 (Ruby I)', async () => {
-      // Given: Ruby I 문제
-      const mockRubyProblem: Problem = {
-        ...mockProblem1000,
-        problemId: 1014,
-        titleKo: '컨닝',
-        level: 30, // Ruby I
-        tags: [
-          {
-            key: 'dp',
-            displayNames: [{ language: 'ko', name: '다이나믹 프로그래밍' }],
-          },
-        ],
-        acceptedUserCount: 500,
-        averageTries: 10.5,
-      };
-      mockApiClient.getProblem.mockResolvedValue(mockRubyProblem);
-      mockApiClient.searchProblems.mockResolvedValue({ count: 0, items: [] });
+    it('Gold (level 14): percentile="중급 (상위 40-60%)"', async () => {
+      // Given
+      mockApiClient.getProblem.mockResolvedValue(mockProblem11053);
+      mockApiClient.searchProblems.mockResolvedValue({
+        count: 0,
+        items: [],
+        page: 1,
+      });
 
       // When
-      const analysis = await analyzer.analyze(1014, false);
+      const analysis = await analyzer.analyze(11053, false);
 
       // Then
-      expect(analysis.difficulty.tier).toBe('Ruby I');
-      expect(analysis.difficulty.level).toBe(30);
-      expect(analysis.difficulty.emoji).toBe('🔴');
-      expect(analysis.difficulty.percentile).toMatch(/최상급|상위 1%/i);
+      expect(analysis.difficulty.level).toBe(14);
+      expect(analysis.difficulty.tier).toBe('Gold II');
+      expect(analysis.difficulty.percentile).toBe('중급 (상위 40-60%)');
+    });
+
+    it('Diamond (level 22): percentile="고급 (상위 3-10%)"', async () => {
+      // Given: Diamond IV 문제
+      const mockDiamondProblem: Problem = {
+        ...mockProblem11053,
+        problemId: 1017,
+        titleKo: '소수 쌍',
+        level: 22, // Diamond IV (21-25: V-IV-III-II-I)
+        tags: [
+          {
+            key: 'number_theory',
+            displayNames: [{ language: 'ko', name: '정수론' }],
+            problemCount: 500,
+          },
+        ],
+        acceptedUserCount: 5000,
+        averageTries: 6.5,
+      };
+      mockApiClient.getProblem.mockResolvedValue(mockDiamondProblem);
+      mockApiClient.searchProblems.mockResolvedValue({
+        count: 0,
+        items: [],
+        page: 1,
+      });
+
+      // When
+      const analysis = await analyzer.analyze(1017, false);
+
+      // Then
+      expect(analysis.difficulty.level).toBe(22);
+      expect(analysis.difficulty.tier).toBe('Diamond IV');
+      expect(analysis.difficulty.percentile).toBe('고급 (상위 3-10%)');
+    });
+  });
+
+  describe('7. 결정적 출력', () => {
+    it('같은 입력 → 같은 hint_guide 출력 (2번 호출 비교)', async () => {
+      // Given
+      mockApiClient.getProblem.mockResolvedValue(mockProblem11053);
+      mockApiClient.searchProblems.mockResolvedValue({
+        count: 0,
+        items: [],
+        page: 1,
+      });
+
+      // When: 동일한 문제를 2번 분석
+      const analysis1 = await analyzer.analyze(11053, false);
+      const analysis2 = await analyzer.analyze(11053, false);
+
+      // Then: hint_guide가 완전히 동일
+      expect(analysis1.hint_guide).toEqual(analysis2.hint_guide);
+      expect(analysis1.hint_guide.context).toBe(analysis2.hint_guide.context);
+      expect(analysis1.hint_guide.hint_levels).toEqual(
+        analysis2.hint_guide.hint_levels,
+      );
+      expect(analysis1.hint_guide.review_prompts).toEqual(
+        analysis2.hint_guide.review_prompts,
+      );
     });
   });
 });
