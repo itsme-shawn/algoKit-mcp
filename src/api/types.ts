@@ -168,3 +168,18 @@ export class InvalidInputError extends Error {
     this.name = 'InvalidInputError';
   }
 }
+
+/**
+ * Rate Limit 타임아웃 에러
+ *
+ * Rate Limiter에서 maxWaitTime을 초과했을 때 발생합니다.
+ */
+export class RateLimitTimeoutError extends Error {
+  /**
+   * @param retryAfter - 재시도 가능 시간 (초 단위)
+   */
+  constructor(public readonly retryAfter: number) {
+    super(`Rate limit exceeded. Retry after ${retryAfter}s`);
+    this.name = 'RateLimitTimeoutError';
+  }
+}

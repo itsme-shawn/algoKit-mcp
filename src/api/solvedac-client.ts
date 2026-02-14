@@ -19,6 +19,7 @@ import {
   RateLimitError,
   InvalidInputError,
 } from './types.js';
+import { solvedAcLimiter } from '../utils/rate-limiter.js';
 
 const API_BASE_URL = 'https://solved.ac/api/v3';
 const DEFAULT_TIMEOUT = 10000; // 10초
@@ -61,8 +62,11 @@ export class SolvedAcClient {
     // 캐시 확인
     const cached = this.getCached<T>(cacheKey);
     if (cached !== null) {
-      return cached;
+      return cached; // 캐시 히트 시 Rate Limiter 우회
     }
+
+    // Rate Limiting 적용
+    await solvedAcLimiter.acquire();
 
     try {
       const controller = new AbortController();
