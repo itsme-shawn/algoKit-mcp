@@ -1,7 +1,7 @@
 # 📚 문서 인덱스
 
 **cote-mcp: BOJ 학습 도우미 MCP Server**
-**마지막 업데이트**: 2026-02-14
+**마지막 업데이트**: 2026-02-15 (Phase 4 Rate Limiting 설계 완료)
 
 ---
 
@@ -103,6 +103,18 @@ docs/
   - 서비스 변경 설계 (1,453줄 → ~200줄, 86% 감소)
   - 마이그레이션 계획 및 Breaking Changes
 
+### [rate-limiting-design.md](01-planning/rate-limiting-design.md) 🆕
+- **제목**: Rate Limiting 설계 문서 (Phase 4.2)
+- **대상 독자**: 개발자, 시스템 설계자
+- **목적**: solved.ac API 호출 제한 설계 (Token Bucket 알고리즘)
+- **주요 내용**:
+  - 문제 정의 및 요구사항
+  - Token Bucket 알고리즘 설명
+  - 클래스 설계 (RateLimiter)
+  - API 통합 계획 (solvedac-client.ts)
+  - 테스트 계획 (단위, 통합, 부하)
+  - 시스템 영향 분석
+
 ---
 
 ## 🛠️ 2. 개발 가이드
@@ -129,6 +141,18 @@ docs/
   - 각 도구의 입력 스키마
   - 출력 형식 및 예시
   - 사용 시나리오
+
+### [rate-limiting-implementation.md](02-development/rate-limiting-implementation.md) 🆕
+- **제목**: Rate Limiting 구현 가이드 (Phase 4.2)
+- **대상 독자**: 백엔드 개발자
+- **목적**: Rate Limiter 상세 구현 지침
+- **주요 내용**:
+  - Token Bucket 알고리즘 구현 상세
+  - TypeScript 코드 예제 (RateLimiter 클래스)
+  - API 통합 방법 (solvedac-client.ts 수정)
+  - 테스트 코드 예제 (단위, 통합, 부하)
+  - 구현 순서 및 체크리스트
+  - 트러블슈팅 가이드
 
 ---
 
@@ -252,6 +276,11 @@ docs/
 
 | 날짜 | 변경 내용 | 담당자 |
 |------|-----------|--------|
+| 2026-02-15 | Phase 4 Rate Limiting 설계 문서 추가 | technical-writer |
+| 2026-02-15 | - rate-limiting-design.md (설계 문서) | project-manager |
+| 2026-02-15 | - rate-limiting-implementation.md (구현 가이드) | project-manager |
+| 2026-02-15 | tasks.md 업데이트 (Task 4.2 진행 상황 반영) | technical-writer |
+| 2026-02-15 | CLAUDE.md 업데이트 (Phase 4 진행 중 표시) | technical-writer |
 | 2026-02-14 | 01-planning 문서 통합 및 재구성 | technical-writer |
 | 2026-02-14 | - development-plan.md 신설 (Phase 통합 관리) | technical-writer |
 | 2026-02-14 | - keyless-architecture.md 통합 (3개 → 1개) | technical-writer |

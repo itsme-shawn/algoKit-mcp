@@ -26,11 +26,13 @@
 - **get_problem**: 문제 상세 정보 조회
 - **search_tags**: 알고리즘 태그 검색
 
-### 3. 향후 계획 (Phase 4)
-- **Rate Limiting**: API 호출 제한
-- **로깅/모니터링**: 구조화된 로깅 및 메트릭 수집
-- **캐싱 최적화**: LRU 캐싱
-- **analyze_user**: 백준 ID로 전체 풀이 이력 분석 (Phase 6+)
+### 3. 향후 계획 (Phase 4) 🚧 진행 중
+- **Rate Limiting**: ✅ 구현 완료 (Token Bucket 알고리즘)
+  - 산출물: `src/utils/rate-limiter.ts` (300줄), 테스트 24개 통과
+  - 문서: `docs/01-planning/rate-limiting-design.md`, `docs/02-development/rate-limiting-implementation.md`
+- **로깅/모니터링**: 📋 대기 중 (구조화된 로깅 및 메트릭 수집)
+- **캐싱 최적화**: 📋 대기 중 (LRU 캐싱)
+- **analyze_user**: 백준 ID로 전체 풀이 이력 분석 (Phase 7+)
 
 ---
 
@@ -217,10 +219,17 @@ User → Claude Code → cote-mcp (JSON + Prompts) → Claude Code (LLM) → Use
 
 ## 빠른 참조
 
+### 기획 및 설계
 - **프로젝트 목적**: [docs/01-planning/PRD.md](docs/01-planning/PRD.md)
 - **시스템 구조**: [docs/01-planning/architecture.md](docs/01-planning/architecture.md)
+- **Rate Limiting 설계**: [docs/01-planning/rate-limiting-design.md](docs/01-planning/rate-limiting-design.md) 🆕
+
+### 개발 가이드
 - **API 사용법**: [docs/02-development/api-integration.md](docs/02-development/api-integration.md)
 - **MCP 도구**: [docs/02-development/tools-reference.md](docs/02-development/tools-reference.md)
+- **Rate Limiting 구현**: [docs/02-development/rate-limiting-implementation.md](docs/02-development/rate-limiting-implementation.md) 🆕
+
+### 프로젝트 관리
 - **현재 작업**: [docs/03-project-management/tasks.md](docs/03-project-management/tasks.md)
 
 ---

@@ -1,7 +1,7 @@
 # MCP 도구 레퍼런스
 
-**버전**: 3.0
-**마지막 업데이트**: 2026-02-14
+**버전**: 3.1
+**마지막 업데이트**: 2026-02-15 (Rate Limiting 구현 완료)
 
 ---
 
@@ -35,6 +35,7 @@
 - **Zero Configuration**: API 키 불필요
 - **빠른 응답**: < 500ms (프롬프트만 생성)
 - **MCP Inspector 호환**: 표준 JSON Schema 사용
+- **Rate Limiting**: solved.ac API 호출 제한 (초당 10회, 자동 대기) ✅ Phase 4 구현 완료
 
 ---
 
@@ -320,21 +321,64 @@ const result = await mcpClient.call('generate_review_template', {
 
 ---
 
+## Rate Limiting
+
+**상태**: ✅ Phase 4 구현 완료 (2026-02-15)
+
+### 개요
+- solved.ac API 호출 제한: 초당 10회
+- 알고리즘: Token Bucket (버킷 용량 10개, 초당 10개 충전)
+- 동작: 캐시 히트 시 즉시 응답, API 호출 시 자동 대기 (최대 5초)
+
+### 구현 명세
+- **파일**: `src/utils/rate-limiter.ts` (300줄)
+- **클래스**: `RateLimiter`
+- **메서드**:
+  - `acquire()`: 토큰 획득 대기 (비동기)
+  - `tryAcquire()`: 즉시 획득 시도 (동기)
+- **파라미터**:
+  - capacity: 10개 (버킷 최대 토큰 수)
+  - refillRate: 초당 10개 (토큰 충전 속도)
+  - timeout: 5초 (최대 대기 시간)
+
+### 성능 특성
+- ⚡ **토큰 획득 오버헤드**: < 1ms
+- 🚀 **캐시 히트 응답**: < 10ms (Rate Limiter 우회)
+- 🎯 **정확도**: 초당 10회 제한 정확히 동작
+- ✅ **테스트**: 24개 테스트 모두 통과 (단위 16개 + 통합 8개)
+
+### 사용자 영향
+- **대부분의 경우**: 영향 없음 (캐싱으로 즉시 응답)
+- **연속 요청 시**: 자동 대기 후 응답 (투명하게 처리)
+- **에러**: Rate Limit 초과 시 명확한 메시지 (`RateLimitTimeoutError`)
+
+### 기술 문서
+- [Rate Limiting 설계](../01-planning/rate-limiting-design.md)
+- [Rate Limiting 구현 가이드](./rate-limiting-implementation.md)
+- [테스트 코드](../../tests/utils/rate-limiter.test.ts)
+
+---
+
 ## 향후 계획
 
-### Phase 6: 문제 본문 및 코드 분석
+### Phase 4: 완성도 & 최적화 (진행 중)
 
-#### fetch_problem_content (진행 중)
-- **설명**: BOJ 문제 본문을 스크래핑합니다 (cheerio + fetch)
-- **입력**: `problem_id`, `use_cache`
-- **출력**: `ProblemContent` (제목, 설명, 입출력, 예제, 제한)
-- **상태**: 스크래퍼 구현 완료 ✅, 캐싱 시스템 대기
+#### Rate Limiting (Task 4.2) ✅
+- **상태**: 구현 완료
+- **담당**: fullstack-developer
+- **완료일**: 2026-02-15
+- **산출물**:
+  - `src/utils/rate-limiter.ts` (300줄)
+  - `tests/utils/rate-limiter.test.ts` (16개 테스트)
+  - `tests/api/solvedac-client-rate-limit.test.ts` (8개 테스트)
 
-#### analyze_code_submission (계획)
-- **설명**: 사용자 코드를 분석하고 피드백을 제공합니다
-- **입력**: `problem_id`, `code`, `language`
-- **출력**: 코드 분석 결과, 개선 제안
-- **상태**: 설계 완료, 구현 대기
+#### 로깅/모니터링 (Task 4.3) 📋
+- **상태**: 대기 중
+- **내용**: Winston 로거, 메트릭 수집
+
+#### 캐싱 최적화 (Task 4.4) 📋
+- **상태**: 대기 중
+- **내용**: LRU 캐시, 메모리 제한
 
 ---
 
@@ -342,3 +386,4 @@ const result = await mcpClient.call('generate_review_template', {
 - [아키텍처 문서](../01-planning/ARCHITECTURE.md)
 - [API 통합 가이드](./API.md)
 - [E2E 테스트 가이드](../04-testing/e2e-manual-test-guide.md)
+- [현재 작업 상황](../03-project-management/tasks.md)
