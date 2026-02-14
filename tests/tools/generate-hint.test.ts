@@ -7,8 +7,10 @@
  * - 출력 구조 (problem, difficulty, tags, hint_guide)
  */
 
-import { describe, it, expect } from 'vitest';
-import { GenerateHintInputSchema } from '../../src/tools/generate-hint.js';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { GenerateHintInputSchema, generateHintTool } from '../../src/tools/generate-hint.js';
+import type { ProblemAnalyzer } from '../../src/services/problem-analyzer.js';
+import { ProblemNotFoundError } from '../../src/api/types.js';
 
 describe('generate_hint 도구', () => {
   describe('Zod 스키마 검증', () => {
@@ -111,32 +113,167 @@ describe('generate_hint 도구', () => {
 });
 
 /**
- * 통합 테스트 (구현 후 작성)
- *
- * generateHint() 메서드가 정상 동작하는지 확인하는 통합 테스트는
- * problem-analyzer.test.ts에서 이미 수행하고 있습니다.
- *
- * 이 파일은 MCP 도구 레이어의 입력 검증에 집중합니다.
+ * 통합 테스트
  */
-describe('generate_hint 도구 핸들러 (통합 테스트는 생략)', () => {
-  it.skip('정상 힌트 생성', async () => {
-    // problem-analyzer.test.ts에서 이미 테스트됨
+describe('generate_hint 도구 핸들러', () => {
+  let mockAnalyzer: {
+    generateHint: ReturnType<typeof vi.fn>;
+  };
+  let tool: ReturnType<typeof generateHintTool>;
+
+  beforeEach(() => {
+    mockAnalyzer = {
+      generateHint: vi.fn(),
+    };
+    tool = generateHintTool(mockAnalyzer as unknown as ProblemAnalyzer);
   });
 
-  it.skip('존재하지 않는 문제 (404)', async () => {
-    // problem-analyzer.test.ts에서 이미 테스트됨
+  it('정상 힌트 생성', async () => {
+    // Given
+    const mockHintResult = {
+      problem: {
+        id: 1927,
+        title: '최소 힙',
+        tier: 'Silver I',
+        tier_emoji: '🟡',
+      },
+      difficulty: {
+        tier: 'Silver I',
+        level: 10,
+        percentile: 'Top 25%',
+        tier_emoji: '🟡',
+      },
+      tags: [
+        {
+          key: 'priority_queue',
+          name_ko: '우선순위 큐',
+          name_en: 'Priority Queue',
+          description: '우선순위 큐 설명',
+        },
+      ],
+      hint_guide: {
+        context: '최소 힙을 사용하는 문제입니다.',
+        hint_levels: [
+          { level: 1, label: '문제 분석', prompt: '입출력을 살펴보세요.' },
+          { level: 2, label: '핵심 아이디어', prompt: '힙 자료구조의 특성을 생각해보세요.' },
+          { level: 3, label: '상세 풀이', prompt: '우선순위 큐를 사용하세요.' },
+        ],
+        review_prompts: {
+          solution_approach: '어떤 알고리즘을 사용했나요?',
+          time_complexity: '시간 복잡도는?',
+        },
+      },
+    };
+    mockAnalyzer.generateHint.mockResolvedValue(mockHintResult);
+
+    // When
+    const result = await tool.handler({ problem_id: 1927 });
+
+    // Then
+    expect(result.type).toBe('text');
+    const hintResult = JSON.parse(result.text);
+    expect(hintResult).toHaveProperty('problem');
+    expect(hintResult).toHaveProperty('difficulty');
+    expect(hintResult).toHaveProperty('tags');
+    expect(hintResult).toHaveProperty('hint_guide');
+    expect(hintResult).not.toHaveProperty('similar_problems');
+    expect(mockAnalyzer.generateHint).toHaveBeenCalledWith(1927);
   });
 
-  it.skip('MCP TextContent 형식', async () => {
-    // problem-analyzer.test.ts에서 이미 테스트됨
+  it('존재하지 않는 문제 (404)', async () => {
+    // Given
+    mockAnalyzer.generateHint.mockRejectedValue(new ProblemNotFoundError(999999));
+
+    // When & Then
+    await expect(tool.handler({ problem_id: 999999 }))
+      .rejects.toThrow('문제를 찾을 수 없습니다: 999999번');
   });
 
-  it.skip('HintResult 인터페이스 준수', async () => {
-    // problem-analyzer.test.ts에서 이미 테스트됨
-    // expect(result).toHaveProperty('problem');
-    // expect(result).toHaveProperty('difficulty');
-    // expect(result).toHaveProperty('tags');
-    // expect(result).toHaveProperty('hint_guide');
-    // expect(result).not.toHaveProperty('similar_problems');
+  it('Zod 검증 에러', async () => {
+    // When & Then
+    await expect(tool.handler({ problem_id: 0 }))
+      .rejects.toThrow('입력 검증 실패');
+  });
+
+  it('일반 에러 전파', async () => {
+    // Given
+    const genericError = new Error('Unexpected error');
+    mockAnalyzer.generateHint.mockRejectedValue(genericError);
+
+    // When & Then
+    await expect(tool.handler({ problem_id: 1927 }))
+      .rejects.toThrow('Unexpected error');
+  });
+
+  it('MCP TextContent 형식', async () => {
+    // Given
+    const mockHintResult = {
+      problem: { id: 1927, title: '최소 힙', tier: 'Silver I', tier_emoji: '🟡' },
+      difficulty: { tier: 'Silver I', level: 10, percentile: 'Top 25%', tier_emoji: '🟡' },
+      tags: [],
+      hint_guide: {
+        context: '',
+        hint_levels: [],
+        review_prompts: {},
+      },
+    };
+    mockAnalyzer.generateHint.mockResolvedValue(mockHintResult);
+
+    // When
+    const result = await tool.handler({ problem_id: 1927 });
+
+    // Then
+    expect(result).toHaveProperty('type');
+    expect(result.type).toBe('text');
+    expect(result).toHaveProperty('text');
+    expect(typeof result.text).toBe('string');
+    expect(() => JSON.parse(result.text)).not.toThrow();
+  });
+
+  it('HintResult 인터페이스 준수', async () => {
+    // Given
+    const mockHintResult = {
+      problem: { id: 1927, title: '최소 힙', tier: 'Silver I', tier_emoji: '🟡' },
+      difficulty: { tier: 'Silver I', level: 10, percentile: 'Top 25%', tier_emoji: '🟡' },
+      tags: [
+        {
+          key: 'priority_queue',
+          name_ko: '우선순위 큐',
+          name_en: 'Priority Queue',
+          description: '설명',
+        },
+      ],
+      hint_guide: {
+        context: '문제 컨텍스트',
+        hint_levels: [
+          { level: 1, label: '문제 분석', prompt: '프롬프트' },
+        ],
+        review_prompts: {
+          solution_approach: '풀이 접근법은?',
+        },
+      },
+    };
+    mockAnalyzer.generateHint.mockResolvedValue(mockHintResult);
+
+    // When
+    const result = await tool.handler({ problem_id: 1927 });
+
+    // Then
+    const hintResult = JSON.parse(result.text);
+    expect(hintResult).toHaveProperty('problem');
+    expect(hintResult).toHaveProperty('difficulty');
+    expect(hintResult).toHaveProperty('tags');
+    expect(hintResult).toHaveProperty('hint_guide');
+    expect(hintResult).not.toHaveProperty('similar_problems');
+
+    // hint_guide 구조 검증
+    expect(hintResult.hint_guide).toHaveProperty('context');
+    expect(hintResult.hint_guide).toHaveProperty('hint_levels');
+    expect(Array.isArray(hintResult.hint_guide.hint_levels)).toBe(true);
+    if (hintResult.hint_guide.hint_levels.length > 0) {
+      expect(hintResult.hint_guide.hint_levels[0]).toHaveProperty('level');
+      expect(hintResult.hint_guide.hint_levels[0]).toHaveProperty('label');
+      expect(hintResult.hint_guide.hint_levels[0]).toHaveProperty('prompt');
+    }
   });
 });

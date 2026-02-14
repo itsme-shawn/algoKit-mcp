@@ -8,8 +8,10 @@
  * - 출력 형식
  */
 
-import { describe, it, expect } from 'vitest';
-import { AnalyzeProblemInputSchema } from '../../src/tools/analyze-problem.js';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { AnalyzeProblemInputSchema, analyzeProblemTool } from '../../src/tools/analyze-problem.js';
+import type { ProblemAnalyzer } from '../../src/services/problem-analyzer.js';
+import { ProblemNotFoundError } from '../../src/api/types.js';
 
 describe('analyze_problem 도구 (Keyless)', () => {
   describe('TC-KL-3.3~3.5: Zod 스키마 검증', () => {
@@ -149,71 +151,234 @@ describe('analyze_problem 도구 (Keyless)', () => {
 });
 
 /**
- * 통합 테스트 (구현 후 작성)
- *
- * 구현 파일이 없으므로 아래 테스트는 실패할 것입니다.
- * 이것은 TDD Red Phase의 예상된 동작입니다.
+ * 통합 테스트
  */
-describe('analyze_problem 도구 핸들러 (구현 필요)', () => {
-  // TC-KL-3.1~3.2: Happy Path
-  it.skip('TC-KL-3.1: 정상 분석 (include_similar=true)', async () => {
-    // 구현 후 작성
-    // const analyzeProblemTool = analyzeProblemTool(mockAnalyzer);
-    // const result = await analyzeProblemTool.handler({ problem_id: 1927, include_similar: true });
-    // expect(result.type).toBe('text');
-    // const analysis = JSON.parse(result.text);
-    // expect(analysis).toHaveProperty('problem');
-    // expect(analysis).toHaveProperty('similar_problems');
+describe('analyze_problem 도구 핸들러', () => {
+  let mockAnalyzer: {
+    analyze: ReturnType<typeof vi.fn>;
+  };
+  let tool: ReturnType<typeof analyzeProblemTool>;
+
+  beforeEach(() => {
+    mockAnalyzer = {
+      analyze: vi.fn(),
+    };
+    tool = analyzeProblemTool(mockAnalyzer as unknown as ProblemAnalyzer);
   });
 
-  it.skip('TC-KL-3.2: 정상 분석 (include_similar=false)', async () => {
-    // 구현 후 작성
-    // const result = await analyzeProblemTool.handler({ problem_id: 1927, include_similar: false });
-    // const analysis = JSON.parse(result.text);
-    // expect(analysis.similar_problems).toEqual([]);
+  // TC-KL-3.1~3.2: Happy Path
+  it('TC-KL-3.1: 정상 분석 (include_similar=true)', async () => {
+    // Given
+    const mockAnalysis = {
+      problem: {
+        id: 1927,
+        title: '최소 힙',
+        tier: 'Silver I',
+        tier_emoji: '🟡',
+      },
+      difficulty: {
+        tier: 'Silver I',
+        level: 10,
+        percentile: 'Top 25%',
+        tier_emoji: '🟡',
+      },
+      tags: [
+        {
+          key: 'priority_queue',
+          name_ko: '우선순위 큐',
+          name_en: 'Priority Queue',
+          description: '우선순위 큐는 각 요소가 우선순위를 가지는 자료구조입니다.',
+        },
+      ],
+      hint_guide: {
+        context: '최소 힙을 사용하여 최솟값을 빠르게 찾는 문제입니다.',
+        hint_levels: [
+          { level: 1, label: '문제 분석', prompt: '입출력 예시를 살펴보세요.' },
+          { level: 2, label: '핵심 아이디어', prompt: '힙 자료구조의 특성을 생각해보세요.' },
+          { level: 3, label: '상세 풀이', prompt: '우선순위 큐를 사용하세요.' },
+        ],
+        review_prompts: {
+          solution_approach: '어떤 알고리즘을 사용했나요?',
+          time_complexity: '시간 복잡도는 얼마인가요?',
+        },
+      },
+      similar_problems: [
+        { id: 11279, title: '최대 힙', tier: 'Silver I' },
+      ],
+    };
+    mockAnalyzer.analyze.mockResolvedValue(mockAnalysis);
+
+    // When
+    const result = await tool.handler({ problem_id: 1927, include_similar: true });
+
+    // Then
+    expect(result.type).toBe('text');
+    const analysis = JSON.parse(result.text);
+    expect(analysis).toHaveProperty('problem');
+    expect(analysis).toHaveProperty('similar_problems');
+    expect(analysis.similar_problems).toHaveLength(1);
+    expect(mockAnalyzer.analyze).toHaveBeenCalledWith(1927, true);
+  });
+
+  it('TC-KL-3.2: 정상 분석 (include_similar=false)', async () => {
+    // Given
+    const mockAnalysis = {
+      problem: { id: 1927, title: '최소 힙', tier: 'Silver I', tier_emoji: '🟡' },
+      difficulty: { tier: 'Silver I', level: 10, percentile: 'Top 25%', tier_emoji: '🟡' },
+      tags: [],
+      hint_guide: {
+        context: '최소 힙 문제',
+        hint_levels: [],
+        review_prompts: {},
+      },
+      similar_problems: [],
+    };
+    mockAnalyzer.analyze.mockResolvedValue(mockAnalysis);
+
+    // When
+    const result = await tool.handler({ problem_id: 1927, include_similar: false });
+
+    // Then
+    const analysis = JSON.parse(result.text);
+    expect(analysis.similar_problems).toEqual([]);
+    expect(mockAnalyzer.analyze).toHaveBeenCalledWith(1927, false);
   });
 
   // TC-KL-3.6~3.7: 에러 처리
-  it.skip('TC-KL-3.6: 존재하지 않는 문제 (404)', async () => {
-    // 구현 후 작성
-    // mockAnalyzer.analyze.mockRejectedValue(new ProblemNotFoundError(999999));
-    // await expect(analyzeProblemTool.handler({ problem_id: 999999 }))
-    //   .rejects.toThrow('문제를 찾을 수 없습니다');
+  it('TC-KL-3.6: 존재하지 않는 문제 (404)', async () => {
+    // Given
+    mockAnalyzer.analyze.mockRejectedValue(new ProblemNotFoundError(999999));
+
+    // When & Then
+    await expect(tool.handler({ problem_id: 999999 }))
+      .rejects.toThrow('문제를 찾을 수 없습니다: 999999번');
   });
 
-  it.skip('TC-KL-3.7: API 에러 전파', async () => {
-    // 구현 후 작성
-    // mockAnalyzer.analyze.mockRejectedValue(new SolvedAcAPIError(500, 'Internal Server Error'));
-    // await expect(analyzeProblemTool.handler({ problem_id: 1927 }))
-    //   .rejects.toThrow();
+  it('TC-KL-3.7: API 에러 전파', async () => {
+    // Given
+    const apiError = new Error('API Error');
+    mockAnalyzer.analyze.mockRejectedValue(apiError);
+
+    // When & Then
+    await expect(tool.handler({ problem_id: 1927 }))
+      .rejects.toThrow('API Error');
+  });
+
+  it('Zod 검증 에러', async () => {
+    // When & Then
+    await expect(tool.handler({ problem_id: 0 }))
+      .rejects.toThrow('입력 검증 실패');
   });
 
   // TC-KL-3.8~3.10: 출력 형식
-  it.skip('TC-KL-3.8: MCP TextContent 형식', async () => {
-    // 구현 후 작성
-    // const result = await analyzeProblemTool.handler({ problem_id: 1927 });
-    // expect(result).toHaveProperty('type');
-    // expect(result.type).toBe('text');
-    // expect(result).toHaveProperty('text');
-    // expect(typeof result.text).toBe('string');
+  it('TC-KL-3.8: MCP TextContent 형식', async () => {
+    // Given
+    const mockAnalysis = {
+      problem: { id: 1927, title: '최소 힙', tier: 'Silver I', tier_emoji: '🟡' },
+      difficulty: { tier: 'Silver I', level: 10, percentile: 'Top 25%', tier_emoji: '🟡' },
+      tags: [],
+      hint_guide: { context: '', hint_levels: [], review_prompts: {} },
+      similar_problems: [],
+    };
+    mockAnalyzer.analyze.mockResolvedValue(mockAnalysis);
+
+    // When
+    const result = await tool.handler({ problem_id: 1927 });
+
+    // Then
+    expect(result).toHaveProperty('type');
+    expect(result.type).toBe('text');
+    expect(result).toHaveProperty('text');
+    expect(typeof result.text).toBe('string');
   });
 
-  it.skip('TC-KL-3.9: JSON 구조 검증', async () => {
-    // 구현 후 작성
-    // const result = await analyzeProblemTool.handler({ problem_id: 1927 });
-    // expect(() => JSON.parse(result.text)).not.toThrow();
+  it('TC-KL-3.9: JSON 구조 검증', async () => {
+    // Given
+    const mockAnalysis = {
+      problem: { id: 1927, title: '최소 힙', tier: 'Silver I', tier_emoji: '🟡' },
+      difficulty: { tier: 'Silver I', level: 10, percentile: 'Top 25%', tier_emoji: '🟡' },
+      tags: [],
+      hint_guide: { context: '', hint_levels: [], review_prompts: {} },
+      similar_problems: [],
+    };
+    mockAnalyzer.analyze.mockResolvedValue(mockAnalysis);
+
+    // When
+    const result = await tool.handler({ problem_id: 1927 });
+
+    // Then
+    expect(() => JSON.parse(result.text)).not.toThrow();
   });
 
-  it.skip('TC-KL-3.10: ProblemAnalysis 인터페이스 준수', async () => {
-    // 구현 후 작성
-    // const result = await analyzeProblemTool.handler({ problem_id: 1927 });
-    // const analysis = JSON.parse(result.text);
-    // expect(analysis).toHaveProperty('problem');
-    // expect(analysis).toHaveProperty('difficulty');
-    // expect(analysis).toHaveProperty('algorithm');
-    // expect(analysis).toHaveProperty('hint_points');
-    // expect(analysis).toHaveProperty('constraints');
-    // expect(analysis).toHaveProperty('gotchas');
-    // expect(analysis).toHaveProperty('similar_problems');
+  it('TC-KL-3.10: ProblemAnalysis 인터페이스 준수', async () => {
+    // Given
+    const mockAnalysis = {
+      problem: { id: 1927, title: '최소 힙', tier: 'Silver I', tier_emoji: '🟡' },
+      difficulty: { tier: 'Silver I', level: 10, percentile: 'Top 25%', tier_emoji: '🟡' },
+      tags: [
+        {
+          key: 'priority_queue',
+          name_ko: '우선순위 큐',
+          name_en: 'Priority Queue',
+          description: '우선순위 큐 설명',
+        },
+      ],
+      hint_guide: {
+        context: '최소 힙 문제',
+        hint_levels: [
+          { level: 1, label: '문제 분석', prompt: '프롬프트' },
+        ],
+        review_prompts: {
+          solution_approach: '어떤 알고리즘을 사용했나요?',
+        },
+      },
+      similar_problems: [
+        { id: 11279, title: '최대 힙', tier: 'Silver I' },
+      ],
+    };
+    mockAnalyzer.analyze.mockResolvedValue(mockAnalysis);
+
+    // When
+    const result = await tool.handler({ problem_id: 1927 });
+
+    // Then
+    const analysis = JSON.parse(result.text);
+    expect(analysis).toHaveProperty('problem');
+    expect(analysis).toHaveProperty('difficulty');
+    expect(analysis).toHaveProperty('tags');
+    expect(analysis).toHaveProperty('hint_guide');
+    expect(analysis).toHaveProperty('similar_problems');
+
+    // problem 구조
+    expect(analysis.problem).toHaveProperty('id');
+    expect(analysis.problem).toHaveProperty('title');
+    expect(analysis.problem).toHaveProperty('tier');
+    expect(analysis.problem).toHaveProperty('tier_emoji');
+
+    // difficulty 구조
+    expect(analysis.difficulty).toHaveProperty('tier');
+    expect(analysis.difficulty).toHaveProperty('level');
+    expect(analysis.difficulty).toHaveProperty('percentile');
+
+    // tags 구조
+    expect(Array.isArray(analysis.tags)).toBe(true);
+    if (analysis.tags.length > 0) {
+      expect(analysis.tags[0]).toHaveProperty('key');
+      expect(analysis.tags[0]).toHaveProperty('name_ko');
+      expect(analysis.tags[0]).toHaveProperty('description');
+    }
+
+    // hint_guide 구조
+    expect(analysis.hint_guide).toHaveProperty('context');
+    expect(analysis.hint_guide).toHaveProperty('hint_levels');
+    expect(Array.isArray(analysis.hint_guide.hint_levels)).toBe(true);
+    if (analysis.hint_guide.hint_levels.length > 0) {
+      expect(analysis.hint_guide.hint_levels[0]).toHaveProperty('level');
+      expect(analysis.hint_guide.hint_levels[0]).toHaveProperty('label');
+      expect(analysis.hint_guide.hint_levels[0]).toHaveProperty('prompt');
+    }
+
+    // similar_problems 구조
+    expect(Array.isArray(analysis.similar_problems)).toBe(true);
   });
 });

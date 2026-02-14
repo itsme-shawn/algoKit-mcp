@@ -8,6 +8,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   handleFetchProblemContent,
   FetchProblemContentInputSchema,
+  fetchProblemContentTool,
 } from '../../src/tools/fetch-problem-content.js';
 
 // Mock 함수 선언 (vi.hoisted로 호이스팅)
@@ -235,7 +236,18 @@ describe('handleFetchProblemContent', () => {
       ).rejects.toThrow('네트워크 요청 실패');
     });
 
-    it('HTML 파싱 에러', async () => {
+    it('파싱 에러 (PARSE_ERROR)', async () => {
+      const error = new Error('응답 형식 오류');
+      (error as any).code = 'PARSE_ERROR';
+      error.name = 'BojFetchError';
+      mockFetchProblemPage.mockRejectedValue(error);
+
+      await expect(
+        handleFetchProblemContent({ problem_id: 1000 })
+      ).rejects.toThrow('응답 형식 오류');
+    });
+
+    it('HTML 파싱 에러 (HtmlParseError)', async () => {
       mockFetchProblemPage.mockResolvedValue('<html>...</html>');
 
       const error = new Error('문제 제목을 찾을 수 없습니다.');
@@ -249,6 +261,15 @@ describe('handleFetchProblemContent', () => {
       await expect(
         handleFetchProblemContent({ problem_id: 1000 })
       ).rejects.toThrow('문제 제목을 찾을 수 없습니다.');
+    });
+
+    it('기타 예상치 못한 에러', async () => {
+      const unexpectedError = new Error('Unexpected Error');
+      mockFetchProblemPage.mockRejectedValue(unexpectedError);
+
+      await expect(
+        handleFetchProblemContent({ problem_id: 1000 })
+      ).rejects.toThrow('Unexpected Error');
     });
   });
 
@@ -308,5 +329,28 @@ describe('handleFetchProblemContent', () => {
       const parsed = JSON.parse(result.text);
       expect(parsed).toEqual(mockContent);
     });
+  });
+});
+
+describe('fetchProblemContentTool', () => {
+  it('도구 정의가 올바른 구조를 가짐', () => {
+    const tool = fetchProblemContentTool();
+
+    expect(tool).toHaveProperty('name', 'fetch_problem_content');
+    expect(tool).toHaveProperty('description');
+    expect(typeof tool.description).toBe('string');
+    expect(tool).toHaveProperty('inputSchema');
+    expect(tool).toHaveProperty('handler');
+    expect(typeof tool.handler).toBe('function');
+  });
+
+  it('handler가 handleFetchProblemContent 함수임', () => {
+    const tool = fetchProblemContentTool();
+    expect(tool.handler).toBe(handleFetchProblemContent);
+  });
+
+  it('inputSchema가 올바른 Zod 스키마임', () => {
+    const tool = fetchProblemContentTool();
+    expect(tool.inputSchema).toBe(FetchProblemContentInputSchema);
   });
 });
