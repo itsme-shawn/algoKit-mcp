@@ -1,9 +1,10 @@
 # Product Requirements Document (PRD)
 # BOJ 학습 도우미 MCP Server
 
-**버전**: 1.0
+**버전**: 2.0 (Keyless Architecture)
 **작성일**: 2026-02-13
-**상태**: Phase 1 개발 중
+**마지막 업데이트**: 2026-02-13
+**상태**: Phase 3 완료 (Keyless 아키텍처 구현)
 
 ---
 
@@ -986,38 +987,51 @@ if (maxTierRatio >= 0.75) {
 
 ## 6. 개발 로드맵
 
-### Phase 1: MVP (1-2주) ✅ 현재 단계
+### Phase 1: MVP (1-2주) ✅ 완료
 **목표**: 기본 문제 검색 및 조회 기능
 
 - [x] 프로젝트 구조 설정
-- [ ] solved.ac API 클라이언트 구현
-- [ ] `search_problems` 도구 구현
-- [ ] `get_problem` 도구 구현
-- [ ] 기본 테스트 작성
+- [x] solved.ac API 클라이언트 구현
+- [x] `search_problems` 도구 구현
+- [x] `get_problem` 도구 구현
+- [x] 기본 테스트 작성
 
-**완료 기준**: Claude를 통해 BOJ 문제를 검색하고 상세 정보를 조회 가능
+**완료 기준**: Claude를 통해 BOJ 문제를 검색하고 상세 정보를 조회 가능 ✅
 
-### Phase 2: 학습 지원 기능 (3주)
-**목표**: 태그 검색 및 힌트 시스템
+### Phase 2: 학습 지원 기능 (2주) ✅ 완료
+**목표**: 태그 검색 기능
 
-- [ ] `search_tags` 도구 구현
-- [ ] Hint Generator Service 구현
-- [ ] `get_hint` 도구 구현
-- [ ] 캐싱 메커니즘 추가
-- [ ] 통합 테스트 작성
+- [x] `search_tags` 도구 구현
+- [x] 캐싱 메커니즘 추가
+- [x] 통합 테스트 작성
 
-**완료 기준**: 사용자가 단계별 힌트를 받을 수 있음
+**완료 기준**: 알고리즘 태그 검색 가능 ✅
 
-### Phase 3: 복습 시스템 (4주)
-**목표**: 완전한 학습 사이클 지원
+### Phase 3: Keyless 힌트 및 복습 시스템 (3주) ✅ 완료
+**목표**: API 키 없이 사용 가능한 학습 지원
 
-- [ ] Review Generator Service 구현
-- [ ] `create_review` 도구 구현
-- [ ] 관련 문제 추천 로직
-- [ ] E2E 테스트 작성
-- [ ] 사용자 문서 작성
+**주요 설계 변경**:
+- ❌ Claude API 통합 제거 → ✅ Keyless 아키텍처 도입
+- ❌ `get_hint` (LLM 기반) → ✅ `analyze_problem` (정적 패턴)
+- ❌ `create_review` (LLM 생성) → ✅ `generate_review_template` (템플릿 + 프롬프트)
 
-**완료 기준**: 문제 발견 → 힌트 → 해결 → 복습의 전체 워크플로우 완성
+**완료 항목**:
+- [x] Keyless 아키텍처 설계
+- [x] ProblemAnalyzer Service 구현 (590 lines)
+- [x] ReviewTemplateGenerator Service 구현 (242 lines)
+- [x] `analyze_problem` 도구 구현
+- [x] `generate_review_template` 도구 구현
+- [x] 3단계 힌트 포인트 데이터 구조 설계
+- [x] 정적 힌트 패턴 매핑 (30개 알고리즘)
+- [x] 관련 문제 추천 로직
+- [x] 단위 및 통합 테스트 작성
+- [x] 아키텍처 문서 작성
+
+**완료 기준**:
+- ✅ API 키 없이 문제 분석 및 복습 템플릿 생성 가능
+- ✅ 응답 시간 < 500ms
+- ✅ 결정적 출력 (테스트 안정성 향상)
+- ✅ Claude Code와의 자연스러운 통합
 
 ### Phase 4: 완성도 & 최적화 (5주)
 **목표**: 프로덕션 준비

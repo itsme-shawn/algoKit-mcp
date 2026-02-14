@@ -1,7 +1,7 @@
 # 📚 문서 인덱스
 
 **cote-mcp: BOJ 학습 도우미 MCP Server**
-**마지막 업데이트**: 2026-02-13
+**마지막 업데이트**: 2026-02-14
 
 ---
 
@@ -68,6 +68,40 @@ docs/
   - 데이터 흐름
   - 기술 스택 및 설계 결정사항
   - 확장성 및 성능 전략
+
+### [development-plan.md](01-planning/development-plan.md) 🆕
+- **제목**: 개발 계획서 (통합 로드맵)
+- **대상 독자**: PM, 개발자, 전체 팀
+- **목적**: Phase별 개발 계획 통합 관리
+- **주요 내용**:
+  - Phase 1-3 완료 현황 요약
+  - Phase 4 확장 기능 계획 (상세)
+  - Phase 5 프롬프트 기반 전환 계획
+  - 향후 로드맵 (Phase 6-7)
+
+### [keyless-architecture.md](01-planning/keyless-architecture.md)
+- **제목**: Keyless MCP 아키텍처 문서 (통합본)
+- **대상 독자**: 개발자, 시스템 설계자
+- **목적**: Phase 3 Keyless 아키텍처 설계 및 검증 결과
+- **주요 내용**:
+  - 아키텍처 원칙 (Zero Configuration, Deterministic Output)
+  - 변경 이유 및 근거 (LLM 기반 vs Keyless)
+  - 시스템 아키텍처 다이어그램
+  - 데이터 구조 설계 (ProblemAnalysis, ReviewTemplate)
+  - 데이터 흐름 (Sequence Diagram)
+  - 구현 상태 및 검증 결과
+  - Tradeoffs 분석 (5개 측면 비교)
+
+### [prompt-architecture-design.md](01-planning/prompt-architecture-design.md)
+- **제목**: 프롬프트 기반 아키텍처 설계서
+- **대상 독자**: 개발자, 시스템 설계자
+- **목적**: 하드코딩 힌트 → 프롬프트 기반 전환 설계 (Phase 5)
+- **주요 내용**:
+  - Before/After 데이터 흐름 (Mermaid)
+  - 타입 시스템 변경 (제거/추가/유지)
+  - 프롬프트 시스템 설계 (3단계 힌트 가이드)
+  - 서비스 변경 설계 (1,453줄 → ~200줄, 86% 감소)
+  - 마이그레이션 계획 및 Breaking Changes
 
 ---
 
@@ -218,6 +252,10 @@ docs/
 
 | 날짜 | 변경 내용 | 담당자 |
 |------|-----------|--------|
+| 2026-02-14 | 01-planning 문서 통합 및 재구성 | technical-writer |
+| 2026-02-14 | - development-plan.md 신설 (Phase 통합 관리) | technical-writer |
+| 2026-02-14 | - keyless-architecture.md 통합 (3개 → 1개) | technical-writer |
+| 2026-02-14 | - phase4-plan.md, phase4-summary.md 제거 | technical-writer |
 | 2026-02-13 | 문서 체계 재구성 및 INDEX.md 작성 | technical-writer |
 | 2026-02-13 | Phase 1 테스트 문서 통합 | technical-writer |
 | 2026-02-13 | 디렉토리 구조 개편 (카테고리별 분류) | technical-writer |
