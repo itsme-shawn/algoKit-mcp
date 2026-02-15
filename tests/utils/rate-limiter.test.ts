@@ -35,8 +35,8 @@ describe('RateLimiter', () => {
       // 토큰이 있으면 즉시 반환 (< 10ms)
       expect(elapsed).toBeLessThan(10);
 
-      // 토큰 1개 소비되었는지 확인
-      expect(limiter.getAvailableTokens()).toBe(9);
+      // 토큰 1개 소비되었는지 확인 (토큰 리필 타이밍으로 인한 소수점 허용)
+      expect(limiter.getAvailableTokens()).toBeCloseTo(9, 0);
     });
 
     /**
@@ -224,8 +224,8 @@ describe('RateLimiter', () => {
 
       // true 반환
       expect(result).toBe(true);
-      // 토큰 1개 소비
-      expect(limiter.getAvailableTokens()).toBe(4);
+      // 토큰 1개 소비 (토큰 리필 타이밍으로 인한 소수점 허용)
+      expect(limiter.getAvailableTokens()).toBeCloseTo(4, 0);
     });
 
     /**

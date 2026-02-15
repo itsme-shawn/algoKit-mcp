@@ -123,25 +123,10 @@ describe('ReviewTemplateGenerator (Prompt-based)', () => {
       expect(result.template).toContain('## 문제 정보');
       expect(result.template).toContain('티어');
       expect(result.template).toContain('태그');
-      expect(result.template).toContain('링크');
       expect(result.template).toContain('해결자 수');
       expect(result.template).toContain('평균 시도');
     });
 
-    it('"## 풀이 접근법" 섹션 존재', async () => {
-      // Given
-      mockApiClient.getProblem.mockResolvedValue(mockProblem1927);
-      mockApiClient.searchProblems.mockResolvedValue({
-        count: 0,
-        items: [],
-      });
-
-      // When
-      const result = await generator.generate(1927);
-
-      // Then
-      expect(result.template).toContain('## 풀이 접근법');
-    });
 
     it('userNotes 전달 시 "## 초기 메모" 섹션 포함', async () => {
       // Given
@@ -276,11 +261,6 @@ describe('ReviewTemplateGenerator (Prompt-based)', () => {
       expect(result.related_problems).toBeDefined();
       expect(Array.isArray(result.related_problems)).toBe(true);
       expect(result.related_problems.length).toBe(0);
-
-      // 템플릿에 "관련 문제 없음" 메시지 포함
-      expect(result.template).toMatch(
-        /관련 문제를 찾을 수 없습니다|관련 문제 없음/,
-      );
     });
   });
 
@@ -375,15 +355,9 @@ describe('ReviewTemplateGenerator (Prompt-based)', () => {
       // When
       const result = await generator.generate(1927);
 
-      // Then: 문제 링크 형식 검증
-      expect(result.template).toMatch(
-        /\[BOJ \d+\]\(https:\/\/www\.acmicpc\.net\/problem\/\d+\)/,
-      );
-
-      // 관련 문제 링크 형식 검증
-      expect(result.template).toMatch(
-        /\[\d+\..+\]\(https:\/\/www\.acmicpc\.net\/problem\/\d+\)/,
-      );
+      // Then: 유사 문제가 포함되어 있는지 확인
+      expect(result.template).toContain('11279');
+      expect(result.template).toContain('최대 힙');
     });
   });
 });

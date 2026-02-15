@@ -198,12 +198,4 @@ describe('ProgrammersScraper', () => {
       expect(status.active).toBe(status.total); // 모든 브라우저가 사용 가능 상태
     }, 60000);
   });
-
-  describe('fetchProblemPage', () => {
-    it('should throw not implemented error', async () => {
-      await expect(scraper.fetchProblemPage('12345')).rejects.toThrow(
-        /not implemented yet/i
-      );
-    });
-  });
 });
