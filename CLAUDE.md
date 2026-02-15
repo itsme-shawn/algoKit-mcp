@@ -22,11 +22,15 @@
   - **프롬프트 기반**: 템플릿 + 가이드 제공, Claude Code가 대화형으로 복습 작성
 
 ### 2. 부가 기능 (Phase 1-2 완료) ✅
-- **search_problems**: 필터 기반 문제 검색
-- **get_problem**: 문제 상세 정보 조회
+- **search_problems**: 필터 기반 BOJ 문제 검색
+- **get_problem**: BOJ 문제 상세 정보 조회
 - **search_tags**: 알고리즘 태그 검색
 
-### 3. 향후 계획 (Phase 4) 🚧 진행 중
+### 3. 프로그래머스 지원 (Phase 7 진행 중) 🚧
+- **search_programmers_problems**: 프로그래머스 문제 검색 (Puppeteer, 3-5초) ✅
+- **get_programmers_problem**: 프로그래머스 문제 상세 조회 (cheerio, 1-2초) ✅
+
+### 4. 향후 계획 (Phase 4) 🚧 진행 중
 - **Rate Limiting**: ✅ 구현 완료 (Token Bucket 알고리즘)
   - 산출물: `src/utils/rate-limiter.ts` (300줄), 테스트 24개 통과
   - 문서: `docs/01-planning/rate-limiting.md` (설계+구현 통합)
@@ -57,10 +61,15 @@
 algokit/
 ├── src/
 │   ├── index.ts                   # MCP 서버 진입점
-│   ├── api/                       # solved.ac API 클라이언트
+│   ├── api/
+│   │   ├── solvedac-client.ts     # BOJ API 클라이언트
+│   │   ├── boj-scraper.ts         # BOJ 스크래퍼
+│   │   └── programmers-scraper.ts # 프로그래머스 스크래퍼 (Puppeteer + cheerio)
 │   ├── tools/                     # MCP 도구들
 │   ├── services/                  # 비즈니스 로직
 │   └── utils/                     # 유틸리티
+│       ├── html-parser.ts         # HTML 파싱 (BOJ + 프로그래머스)
+│       └── url-parser.ts          # URL 파싱 (프로그래머스)
 ├── tests/                         # 테스트 코드
 └── docs/                          # 상세 문서
     ├── INDEX.md                   # 문서 탐색 가이드

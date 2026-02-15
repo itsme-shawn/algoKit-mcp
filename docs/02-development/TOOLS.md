@@ -28,6 +28,8 @@
 | `search_tags` | ✅ 완료 | Phase 2 | 알고리즘 태그 검색 |
 | `fetch_problem_content` | ✅ 완료 | Phase 6 | BOJ 문제 본문 스크래핑 |
 | `analyze_code_submission` | ✅ 완료 | Phase 6 | 사용자 코드 분석 및 피드백 |
+| `search_programmers_problems` | ✅ 완료 | Phase 7 | 프로그래머스 문제 검색 |
+| `get_programmers_problem` | ✅ 완료 | Phase 7 | 프로그래머스 문제 상세 조회 |
 
 ### 아키텍처 특징
 
@@ -428,6 +430,145 @@ const result = await mcpClient.call('generate_review_template', {
 - [구현 파일: lru-cache.ts](../../src/utils/lru-cache.ts)
 - [통계 수집: cache-stats.ts](../../src/utils/cache-stats.ts)
 - [테스트 코드](../../tests/utils/lru-cache.test.ts)
+
+---
+
+## 프로그래머스 도구
+
+### 8. search_programmers_problems
+
+**설명**: 프로그래머스 문제를 검색합니다 (Puppeteer 기반 웹 스크래핑).
+
+**입력**:
+```typescript
+{
+  levels?: number[];        // 레벨 필터 (0-5)
+  categories?: string[];    // 카테고리 필터 (예: "해시", "스택/큐")
+  order?: string;           // 정렬 순서 (accuracy_asc/desc, level, recent, submission)
+  page?: number;            // 페이지 번호 (기본: 1)
+  query?: string;           // 검색 키워드
+}
+```
+
+**출력**:
+```typescript
+{
+  problems: [
+    {
+      problemId: string;    // 문제 ID (예: "42576")
+      title: string;        // 문제 제목
+      level: number;        // 난이도 (0-5)
+      category: string;     // 카테고리
+      url: string;          // 문제 URL
+    }
+  ];
+  total: number;            // 총 문제 수
+  page: number;             // 현재 페이지
+}
+```
+
+**사용 방법**:
+```typescript
+// MCP 호출
+const result = await mcpClient.call('search_programmers_problems', {
+  levels: [2, 3],
+  order: 'level',
+  page: 1
+});
+```
+
+**핵심 기능**:
+- 🔍 **다중 필터**: 레벨, 카테고리, 정렬 순서
+- 📄 **페이지네이션**: 페이지 단위 결과 반환
+- ⚡ **Puppeteer 기반**: 동적 콘텐츠 파싱 (3-5초)
+- 💾 **캐싱**: LRU 캐시 (TTL 30분)
+
+**제약사항**:
+- 스크래핑 대상: https://school.programmers.co.kr/learn/challenges
+- 타임아웃: 30초
+- Rate Limiting: 초당 1회
+- 최초 응답: 3-5초 (Puppeteer 브라우저 실행)
+- 캐시 응답: < 100ms
+
+---
+
+### 9. get_programmers_problem
+
+**설명**: 프로그래머스 문제 상세 정보를 조회합니다 (cheerio 기반 웹 스크래핑).
+
+**입력**:
+```typescript
+{
+  problem_id: string | number;  // 문제 ID 또는 URL
+}
+```
+
+**입력 예시**:
+- 숫자: `42576`
+- 문자열: `"42576"`
+- URL: `"https://school.programmers.co.kr/learn/courses/30/lessons/42576"`
+
+**출력**:
+```markdown
+# 완주하지 못한 선수
+
+**레벨**: 🟢 Lv. 1 | **카테고리**: 해시
+
+**문제 ID**: 42576
+**URL**: https://school.programmers.co.kr/learn/courses/30/lessons/42576
+
+---
+
+## 문제 설명
+수많은 마라톤 선수들이 마라톤에 참여하였습니다...
+
+## 제한사항
+- 경기에 참여한 선수의 수는 1명 이상 100,000명 이하입니다.
+- completion의 길이는 participant의 길이보다 1 작습니다.
+
+## 입출력 예
+| 입력 | 출력 |
+|------|------|
+| ["leo", "kiki", "eden"] | "leo" |
+
+---
+
+💡 **다음 단계**:
+- 문제 분석: `analyze_programmers_problem` (구현 예정)
+- 코드 제출 분석: `analyze_code_submission` (BOJ만 지원)
+
+⚠️ **참고**: 프로그래머스 사이트에서 직접 문제를 풀어야 합니다.
+```
+
+**사용 방법**:
+```typescript
+// MCP 호출
+const result = await mcpClient.call('get_programmers_problem', {
+  problem_id: 42576
+});
+
+// URL로도 가능
+const result2 = await mcpClient.call('get_programmers_problem', {
+  problem_id: "https://school.programmers.co.kr/learn/courses/30/lessons/42576"
+});
+```
+
+**핵심 기능**:
+- 📖 **전체 문제 내용**: 제목, 설명, 제한사항, 입출력 예제
+- ⚡ **빠른 응답**: cheerio 기반 (1-2초)
+- 🔗 **URL 지원**: 문제 ID 또는 URL 입력 가능
+- 💾 **장기 캐싱**: LRU 캐시 (TTL 30일)
+
+**제약사항**:
+- 스크래핑 대상: https://school.programmers.co.kr/learn/courses/30/lessons/{problem_id}
+- 타임아웃: 10초
+- 재시도: 최대 2회
+- Rate Limiting: 초당 1회
+
+**참고**:
+- BOJ와 다르게 프로그래머스는 fetch + cheerio 사용 (SSR 페이지)
+- 프로그래머스는 태그 정보가 없으므로 tags 필드는 빈 배열
+- 문제 분석 도구(`analyze_programmers_problem`)는 향후 구현 예정
 
 ---
 

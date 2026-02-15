@@ -1,14 +1,26 @@
 # AlgoKit
 
-백준 온라인 저지(Baekjoon Online Judge) 알고리즘 문제 학습을 돕는 MCP(Model Context Protocol) 서버입니다.
+백준 온라인 저지(Baekjoon Online Judge) 및 프로그래머스(Programmers) 알고리즘 문제 학습을 돕는 MCP(Model Context Protocol) 서버입니다.
+
+## 지원 플랫폼
+
+- ✅ **백준 온라인 저지 (BOJ)**: 문제 검색, 상세 조회, 본문 스크래핑, 코드 분석
+- ✅ **프로그래머스 (Programmers)**: 문제 검색, 상세 조회
 
 ## 기능
 
+### BOJ 도구
 - 문제 검색 및 필터링 (티어, 태그, 키워드)
 - 문제 상세 정보 조회
 - 태그 검색
-- 단계별 힌트 생성 (예정)
-- 복습 문서 자동 생성 (예정)
+- 문제 본문 스크래핑 (HTML 파싱)
+- 단계별 힌트 생성
+- 복습 문서 자동 생성
+- 코드 분석 및 피드백
+
+### 프로그래머스 도구
+- 문제 검색 (난이도, 카테고리, 정렬, 키워드)
+- 문제 상세 조회 (제목, 설명, 제한사항, 예제)
 
 ## 설치
 
@@ -65,26 +77,62 @@ npm test tests/utils/tier-converter.test.ts
 | Functions | 97.05% |
 | Lines | 96.66% |
 
+## MCP 도구 목록
+
+### BOJ (백준)
+- `search_problems`: 문제 검색 (티어, 태그, 키워드)
+- `get_problem`: 문제 상세 조회
+- `search_tags`: 알고리즘 태그 검색
+- `fetch_problem_content`: 문제 본문 스크래핑 (HTML)
+- `analyze_problem`: 문제 메타데이터 분석
+- `generate_hint`: 3단계 힌트 가이드 생성
+- `generate_review_template`: 복습 템플릿 생성
+- `analyze_code_submission`: 코드 분석 및 피드백
+
+### 프로그래머스 (Programmers)
+- `search_programmers_problems`: 문제 검색 (난이도, 카테고리, 정렬, 키워드)
+- `get_programmers_problem`: 문제 상세 조회 (제목, 설명, 제한사항, 예제)
+
 ## 프로젝트 구조
 
 ```
 AlgoKit/
 ├── src/
 │   ├── api/
-│   │   ├── solvedac-client.ts  # solved.ac API 클라이언트
-│   │   └── types.ts            # API 타입 정의
+│   │   ├── solvedac-client.ts      # solved.ac API 클라이언트
+│   │   ├── boj-scraper.ts          # BOJ 스크래퍼
+│   │   ├── programmers-scraper.ts  # 프로그래머스 스크래퍼
+│   │   └── types.ts                # API 타입 정의
+│   ├── tools/
+│   │   ├── search-problems.ts
+│   │   ├── get-problem.ts
+│   │   ├── search-tags.ts
+│   │   ├── fetch-problem-content.ts
+│   │   ├── analyze-problem.ts
+│   │   ├── generate-hint.ts
+│   │   ├── generate-review-template.ts
+│   │   ├── analyze-code-submission.ts
+│   │   ├── search-programmers-problems.ts  # 프로그래머스 검색
+│   │   └── get-programmers-problem.ts      # 프로그래머스 상세
 │   ├── utils/
-│   │   ├── tier-converter.ts   # 티어 변환 유틸리티
-│   │   └── cache.ts            # 캐싱 유틸리티
-│   └── index.ts                # MCP 서버 진입점
+│   │   ├── tier-converter.ts       # 티어 변환 유틸리티
+│   │   ├── lru-cache.ts            # LRU 캐시
+│   │   ├── rate-limiter.ts         # Rate Limiting
+│   │   ├── html-parser.ts          # HTML 파싱 (BOJ + 프로그래머스)
+│   │   └── url-parser.ts           # URL 파싱 (프로그래머스)
+│   └── index.ts                    # MCP 서버 진입점
 ├── tests/
-│   ├── api/                    # API 테스트
-│   ├── utils/                  # 유틸리티 테스트
-│   └── __mocks__/              # Mock 데이터
+│   ├── api/                        # API 테스트
+│   ├── tools/                      # 도구 테스트
+│   ├── utils/                      # 유틸리티 테스트
+│   └── __mocks__/                  # Mock 데이터
 ├── docs/
-│   ├── test-spec-phase1.md     # 테스트 스펙
-│   └── test-report-phase1.md   # 테스트 결과 리포트
-└── vitest.config.ts            # 테스트 설정
+│   ├── INDEX.md                    # 문서 탐색 가이드
+│   ├── 01-planning/                # 기획 및 설계
+│   ├── 02-development/             # 개발 가이드
+│   ├── 03-project-management/      # 프로젝트 관리
+│   └── 04-testing/                 # 테스트 문서
+└── vitest.config.ts                # 테스트 설정
 ```
 
 ## 기술 스택
@@ -147,15 +195,26 @@ AlgoKit/
 
 ## 개발 현황
 
-**현재 Phase**: Phase 1 - 기반 구축 ✅ 완료
+**현재 Phase**: Phase 7 - 프로그래머스 통합 진행 중 🚧
 
-- [x] 프로젝트 구조 설정
-- [x] TypeScript 설정
-- [x] solved.ac API 클라이언트 구현
-- [x] 티어 변환 유틸리티
-- [x] 캐싱 시스템
-- [x] 단위 테스트 작성 (140개)
-- [ ] Phase 2: MCP 도구 구현 (예정)
+### 완료된 Phase
+- ✅ Phase 1: 기반 구축 (solved.ac API, 티어 변환, 캐싱)
+- ✅ Phase 2: 핵심 도구 (문제 검색, 상세 조회, 태그 검색)
+- ✅ Phase 3: 고급 기능 (Keyless 아키텍처)
+- ✅ Phase 5: 프롬프트 기반 아키텍처 (힌트, 복습)
+- ✅ Phase 6: BOJ 문제 본문 스크래핑 및 코드 분석
+- 🚧 Phase 4: 완성도 & 최적화 (진행 중 - Rate Limiting ✅, LRU 캐싱 ✅)
+
+### 진행 중 Phase
+- 🚧 **Phase 7: 프로그래머스 통합** (62.5% 완료)
+  - ✅ Task 7.2: 검색 기능 (Puppeteer)
+  - ✅ Task 7.3: 문제 상세 조회 (cheerio)
+  - ✅ Task 7.5: MCP 도구 구현 (2개)
+  - 📋 Task 7.7: 테스트 코드 작성
+  - 📋 Task 7.8: 문서 업데이트
+
+### 전체 진행률
+- 90% 완료 (32/35 태스크)
 
 ## 라이선스
 
