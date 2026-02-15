@@ -151,11 +151,16 @@ describe('BrowserPool', () => {
       // 대기 중인 요청
       const acquirePromise = pool.acquire();
 
+      // rejection handler를 먼저 등록하여 unhandled rejection 방지
+      const rejectionCheck = expect(acquirePromise).rejects.toThrow(
+        'BrowserPool is closing'
+      );
+
       // 풀 닫기
       await pool.closeAll();
 
-      // 대기 중인 요청 거부
-      await expect(acquirePromise).rejects.toThrow('BrowserPool is closing');
+      // 대기 중인 요청 거부 확인
+      await rejectionCheck;
     }, 10000);
   });
 
@@ -184,9 +189,12 @@ describe('BrowserPool', () => {
       const status = pool.getStatus();
       expect(status.waiting).toBe(1);
 
+      // rejection handler를 먼저 등록하여 unhandled rejection 방지
+      const rejectionCheck = expect(acquirePromise).rejects.toThrow();
+
       // 정리
       await pool.closeAll();
-      await expect(acquirePromise).rejects.toThrow();
+      await rejectionCheck;
     }, 10000);
   });
 });

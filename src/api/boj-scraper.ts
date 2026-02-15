@@ -7,6 +7,9 @@
  * 윤리적 스크래핑을 위해 요청 간 최소 3초 간격을 유지합니다.
  */
 
+import { RateLimiter } from '../utils/rate-limiter.js';
+import { LRUCache } from '../utils/lru-cache.js';
+
 /**
  * BOJ 스크래퍼 설정
  */
@@ -44,6 +47,24 @@ export class BOJScraper {
   /** 마지막 요청 시간 (윤리적 스크래핑을 위한 간격 제어) */
   private lastRequestTime = 0;
 
+  /** Rate Limiter (백업 보호) */
+  private rateLimiter: RateLimiter;
+
+  /** HTML 캐시 (30일 TTL) */
+  private cache: LRUCache<number, string>;
+
+  constructor() {
+    // Rate Limiter: 초당 5회 (3초 간격보다 관대, 백업 역할)
+    this.rateLimiter = new RateLimiter({
+      capacity: 5,
+      refillRate: 5,
+      maxWaitTime: 15000,
+    });
+
+    // HTML 캐시: 50개 항목, 30일 TTL
+    this.cache = new LRUCache(50, 30 * 24 * 60 * 60 * 1000);
+  }
+
   /**
    * 지정된 문제 번호의 HTML 페이지를 가져옵니다.
    *
@@ -68,6 +89,16 @@ export class BOJScraper {
       );
     }
 
+    // 캐시 확인
+    const cached = this.cache.get(problemId);
+    if (cached !== undefined) {
+      console.log(`[BOJScraper] 캐시 히트: 문제 ${problemId}`);
+      return cached;
+    }
+
+    // Rate Limiting (백업 보호, 캐시 미스 시에만)
+    await this.rateLimiter.acquire();
+
     // 윤리적 스크래핑: 마지막 요청으로부터 최소 3초 경과 보장
     await this._ensureRequestInterval();
 
@@ -81,6 +112,10 @@ export class BOJScraper {
 
         // 요청 성공 시 현재 시간 기록
         this.lastRequestTime = Date.now();
+
+        // 캐시에 저장
+        this.cache.set(problemId, html);
+
         return html;
       } catch (error) {
         lastError = error;
@@ -200,5 +235,21 @@ export class BOJScraper {
    */
   private _delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /**
+   * 캐시 통계 조회
+   *
+   * @returns 캐시 통계
+   */
+  getCacheStats() {
+    return this.cache.getStats();
+  }
+
+  /**
+   * 캐시 초기화
+   */
+  clearCache(): void {
+    this.cache.clear();
   }
 }

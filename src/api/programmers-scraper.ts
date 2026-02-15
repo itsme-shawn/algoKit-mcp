@@ -7,6 +7,7 @@
 import { Browser } from 'puppeteer';
 import { BrowserPool } from '../utils/browser-pool.js';
 import { RateLimiter } from '../utils/rate-limiter.js';
+import { LRUCache } from '../utils/lru-cache.js';
 import {
   ProgrammersSearchOptions,
   ProgrammersProblemSummary,
@@ -38,6 +39,8 @@ export class ProgrammersScrapeError extends Error {
 export class ProgrammersScraper {
   private browserPool: BrowserPool;
   private rateLimiter: RateLimiter;
+  private searchCache: LRUCache<string, ProgrammersProblemSummary[]>;
+  private problemCache: LRUCache<string, ProgrammersProblemDetail>;
   private readonly baseUrl = 'https://school.programmers.co.kr';
 
   constructor() {
@@ -47,6 +50,10 @@ export class ProgrammersScraper {
       capacity: 2,
       refillRate: 1,
     });
+    // 검색 캐시: 50개 항목, 30분 TTL
+    this.searchCache = new LRUCache(50, 30 * 60 * 1000);
+    // 문제 상세 캐시: 50개 항목, 30일 TTL
+    this.problemCache = new LRUCache(50, 30 * 24 * 60 * 60 * 1000);
   }
 
   /**
@@ -67,7 +74,18 @@ export class ProgrammersScraper {
       query,
     } = options;
 
-    // Rate limiting
+    // 캐시 키 생성
+    const cacheKey = JSON.stringify({ levels, order, page, query });
+
+    // 캐시 확인
+    const cached = this.searchCache.get(cacheKey);
+    if (cached !== undefined) {
+      console.log('[ProgrammersScraper] 캐시 히트: 검색 결과');
+      // limit 적용 후 반환
+      return limit && limit > 0 ? cached.slice(0, limit) : cached;
+    }
+
+    // Rate limiting (캐시 미스 시에만)
     await this.rateLimiter.acquire();
 
     let browser: Browser | null = null;
@@ -182,7 +200,10 @@ export class ProgrammersScraper {
 
       await browserPage.close();
 
-      // 6. limit 적용
+      // 6. 캐시에 저장 (limit 적용 전 전체 결과 저장)
+      this.searchCache.set(cacheKey, problems);
+
+      // 7. limit 적용
       if (limit && limit > 0) {
         problems = problems.slice(0, limit);
       }
@@ -359,6 +380,26 @@ export class ProgrammersScraper {
   }
 
   /**
+   * 캐시 통계 조회
+   *
+   * @returns 검색 및 문제 캐시 통계
+   */
+  getCacheStats() {
+    return {
+      search: this.searchCache.getStats(),
+      problem: this.problemCache.getStats(),
+    };
+  }
+
+  /**
+   * 캐시 초기화
+   */
+  clearCache(): void {
+    this.searchCache.clear();
+    this.problemCache.clear();
+  }
+
+  /**
    * 문제 상세 정보 조회 (fetch + cheerio 기반)
    *
    * @param problemId 문제 ID
@@ -366,12 +407,23 @@ export class ProgrammersScraper {
    * @throws {ProgrammersScrapeError}
    */
   async getProblem(problemId: string): Promise<ProgrammersProblemDetail> {
-    // 1. HTML 가져오기
+    // 캐시 확인
+    const cached = this.problemCache.get(problemId);
+    if (cached !== undefined) {
+      console.log(`[ProgrammersScraper] 캐시 히트: 문제 ${problemId}`);
+      return cached;
+    }
+
+    // 1. HTML 가져오기 (캐시 미스 시에만)
     const html = await this.fetchProblemPage(problemId);
 
     // 2. HTML 파싱
     try {
       const detail = parseProgrammersProblemContent(html, problemId);
+
+      // 3. 캐시에 저장
+      this.problemCache.set(problemId, detail);
+
       return detail;
     } catch (error) {
       throw new ProgrammersScrapeError(
