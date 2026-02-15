@@ -1,0 +1,14 @@
+# Codex CLI MCP Server Configuration
+# 위치: ~/.codex/config.toml 또는 .codex/config.toml
+
+[mcp.servers.algokit]
+command = "node"
+args = ["/absolute/path/to/algokit/build/index.js"]
+
+# 설명:
+# - command: Node.js 실행 명령어
+# - args: AlgoKit 빌드 파일의 절대 경로 지정
+#
+# 주의:
+# - 경로는 반드시 절대 경로로 지정 (예: /Users/username/projects/algokit/build/index.js)
+# - 빌드가 완료된 상태여야 함 (npm run build 실행 후)

@@ -1,11 +1,29 @@
 # AlgoKit
 
-백준 온라인 저지(Baekjoon Online Judge) 및 프로그래머스(Programmers) 알고리즘 문제 학습을 돕는 MCP(Model Context Protocol) 서버입니다.
+백준 온라인 저지(Baekjoon Online Judge) 및 프로그래머스(Programmers) 알고리즘 문제 학습을 돕는 **통합 MCP(Model Context Protocol) 서버**입니다.
+
+**통합 스킬 `algokit`**을 통해 플랫폼을 자동으로 선택하여, 사용자는 BOJ와 프로그래머스를 구분하지 않고 자연스럽게 학습할 수 있습니다.
 
 ## 지원 플랫폼
 
-- ✅ **백준 온라인 저지 (BOJ)**: 문제 검색, 상세 조회, 본문 스크래핑, 코드 분석
+- ✅ **백준 온라인 저지 (BOJ)**: 문제 검색, 상세 조회, 본문 스크래핑, 힌트 생성, 복습 템플릿, 코드 분석
 - ✅ **프로그래머스 (Programmers)**: 문제 검색, 상세 조회
+
+## 통합 스킬: 플랫폼 자동 선택
+
+**스킬명**: `algokit`
+
+사용자 입력을 분석하여 BOJ와 프로그래머스 중 적절한 플랫폼을 자동으로 선택합니다.
+
+### 자동 선택 규칙
+
+1. **명시적 플랫폼 지정**: "백준 1000번", "프로그래머스 42576번" → 자동 처리
+2. **URL 제공**: `https://www.acmicpc.net/problem/1000` → BOJ 자동 인식
+3. **번호만 제공**: "1000번" → 플랫폼 선택 요청
+4. **일반 추천**: "코테 문제 추천해줘" → BOJ 기본 + 프로그래머스 옵션 제안
+5. **문제명 검색**: "피보나치 문제" → 두 플랫폼 모두 검색 후 통합 결과 제공
+
+**상세 규칙**: [PRD.md](docs/01-planning/PRD.md) 섹션 6 참조
 
 ## 기능
 
@@ -22,11 +40,230 @@
 - 문제 검색 (난이도, 카테고리, 정렬, 키워드)
 - 문제 상세 조회 (제목, 설명, 제한사항, 예제)
 
-## 설치
+## 설치 및 설정
+
+### 1. 패키지 설치
 
 ```bash
+# 저장소 클론
+git clone https://github.com/your-org/algokit.git
+cd algokit
+
+# 의존성 설치
 npm install
+
+# 빌드
+npm run build
 ```
+
+### 2. CLI별 설정
+
+AlgoKit은 **Claude Code**, **Codex CLI**, **Gemini CLI** 모두에서 사용 가능합니다.
+
+#### 🎯 Claude Code (추천)
+
+**특징**:
+- ✅ **Skill 지원**: 플랫폼 자동 선택 (BOJ ↔ 프로그래머스)
+- ✅ **자연어 인터페이스**: "백준 문제 추천해줘" → 자동 처리
+- ✅ **URL 자동 파싱**: `acmicpc.net` URL 제공 시 자동 인식
+
+**설정 방법**:
+
+1. MCP 서버 설정 (`~/.config/Claude/claude_desktop_config.json`):
+```json
+{
+  "mcpServers": {
+    "algokit": {
+      "command": "node",
+      "args": ["/path/to/algokit/build/index.js"]
+    }
+  }
+}
+```
+
+2. Skill 파일 복사 (선택사항이지만 **강력 권장**):
+```bash
+# Skill 파일을 프로젝트 디렉토리에 복사
+cp .claude/skills/algokit.md /your/project/.claude/skills/
+
+# 또는 전역 설정
+cp .claude/skills/algokit.md ~/.claude/skills/
+```
+
+3. Claude Code 재시작
+
+**사용 예시**:
+```
+You: "백준 골드 난이도 DP 문제 3개 추천해줘"
+Claude: [자동으로 search_problems 호출, BOJ 플랫폼 선택]
+
+You: "이 문제 분석해줘: https://www.acmicpc.net/problem/1927"
+Claude: [URL 파싱 → analyze_problem(1927) 자동 호출]
+
+You: "프로그래머스에서 Level 2 문제 찾아줘"
+Claude: [search_programmers_problems 자동 호출]
+```
+
+---
+
+#### 🔧 Codex CLI (OpenAI)
+
+**특징**:
+- ✅ **MCP 완전 지원**: 모든 10개 도구 사용 가능
+- ⚠️ **Skill 미지원**: 플랫폼 수동 선택 필요
+- ⚠️ **도구 이름 명시**: 사용자가 MCP 도구를 직접 지정
+
+**설정 방법**:
+
+1. Codex 설정 파일 (`~/.codex/config.toml` 또는 `.codex/config.toml`):
+```toml
+[mcp.servers.algokit]
+command = "node"
+args = ["/path/to/algokit/build/index.js"]
+```
+
+2. Codex CLI 재시작
+
+**사용 예시** (수동 호출):
+```bash
+# BOJ 문제 검색
+You: "백준 문제 검색해줘"
+Codex: [도구 목록 제시]
+You: "search_problems를 사용해서 level_min: 11, level_max: 15로 검색"
+
+# 프로그래머스 문제 상세 조회
+You: "get_programmers_problem를 사용해서 42576번 조회"
+
+# 힌트 생성
+You: "analyze_problem으로 1927번 분석"
+```
+
+**제한사항**:
+- URL 자동 파싱 불가 → 사용자가 문제 번호 추출 필요
+- 플랫폼 자동 선택 불가 → "백준" vs "프로그래머스" 명시 필요
+- 병렬 검색 불가 → 각 플랫폼을 순차적으로 검색
+
+---
+
+#### 🌐 Gemini CLI (Google)
+
+**특징**:
+- ✅ **MCP 완전 지원**: 모든 10개 도구 사용 가능
+- ⚠️ **Skill 미지원**: 플랫폼 수동 선택 필요
+- ✅ **FastMCP 통합**: 간편 설치 지원 (예정)
+
+**설정 방법**:
+
+1. Gemini 설정 파일 (`~/.gemini/config.json` 또는 프로젝트별):
+```json
+{
+  "mcpServers": {
+    "algokit": {
+      "command": "node",
+      "args": ["/path/to/algokit/build/index.js"]
+    }
+  }
+}
+```
+
+2. Gemini CLI 재시작
+
+**사용 예시** (수동 호출):
+```bash
+# BOJ 문제 검색
+You: "search_problems 도구로 DP 문제 검색"
+
+# 프로그래머스 문제 검색
+You: "search_programmers_problems로 Level 2 문제 찾기"
+
+# 문제 분석
+You: "analyze_problem 도구로 1927번 백준 문제 분석"
+```
+
+**제한사항**: Codex CLI와 동일
+
+---
+
+### 3. CLI별 기능 비교
+
+| 기능 | Claude Code | Codex CLI | Gemini CLI |
+|------|-------------|-----------|------------|
+| **MCP 도구 (10개)** | ✅ | ✅ | ✅ |
+| **Skill (자동 라우팅)** | ✅ | ❌ | ❌ |
+| **플랫폼 자동 선택** | ✅ | ❌ | ❌ |
+| **URL 자동 파싱** | ✅ | ❌ | ❌ |
+| **병렬 검색** | ✅ | ❌ | ❌ |
+| **자연어 인터페이스** | ✅ 완전 지원 | ⚠️ 부분 지원 | ⚠️ 부분 지원 |
+| **추천 사용 대상** | 🌟 모든 사용자 | 고급 사용자 | 고급 사용자 |
+
+---
+
+### 💡 빠른 설정 (예시 파일 제공)
+
+설정 예시 파일이 준비되어 있습니다!
+
+**위치**: [`.claude/examples/`](./.claude/examples/)
+
+| CLI | 설정 파일 | 복사 대상 |
+|-----|----------|-----------|
+| Claude Code | `claude-code-config.json` | `~/.config/Claude/claude_desktop_config.json` |
+| Codex CLI | `codex-config.toml` | `~/.codex/config.toml` |
+| Gemini CLI | `gemini-config.json` | `~/.gemini/config.json` |
+
+**빠른 시작**:
+```bash
+# 1. 예시 파일 복사 (Codex CLI 예시)
+cp .claude/examples/codex-config.toml ~/.codex/config.toml
+
+# 2. 파일 열기
+nano ~/.codex/config.toml
+
+# 3. 경로 수정: /absolute/path/to/algokit/build/index.js → 실제 경로
+
+# 4. CLI 재시작
+```
+
+상세한 설명은 [`.claude/examples/README.md`](./.claude/examples/README.md) 참조
+
+---
+
+### 4. 설치 확인
+
+MCP 서버가 정상적으로 등록되었는지 확인:
+
+**Claude Code**:
+```bash
+# MCP Inspector로 테스트
+npx @modelcontextprotocol/inspector node build/index.js
+```
+
+**Codex CLI**:
+```bash
+# MCP 도구 목록 확인
+mcp-cli tools algokit
+```
+
+**Gemini CLI**:
+```bash
+# 설정 확인
+gemini config list
+```
+
+### 5. 트러블슈팅
+
+#### "MCP 서버를 찾을 수 없습니다"
+- 빌드가 완료되었는지 확인: `npm run build`
+- 설정 파일의 경로가 절대 경로인지 확인
+- CLI 재시작
+
+#### "도구가 동작하지 않습니다"
+- MCP Inspector로 직접 테스트: `npx @modelcontextprotocol/inspector node build/index.js`
+- 에러 로그 확인: `stderr` 출력 체크
+- Node.js 버전 확인: `>=18.0.0` 필요
+
+#### Codex/Gemini에서 플랫폼 선택이 안 됩니다
+- 정상입니다! Skill 미지원 CLI에서는 사용자가 명시적으로 도구를 지정해야 합니다.
+- 해결책: Claude Code 사용 또는 도구 이름 직접 지정
 
 ## 개발
 
