@@ -1,300 +1,239 @@
-# 📚 cote-mcp Documentation Index
+# 📚 AlgoKit 문서 인덱스
 
-**마지막 업데이트**: 2026-02-16 (문서 정리 완료 - 50% 축소)
-**총 문서**: 17개 (정리 전: 34개 → 정리 후: 17개)
-
----
-
-## 문서 구조 개요
-
-이 디렉토리는 프로젝트의 모든 공식 문서를 포함합니다. 문서는 용도에 따라 분류되어 있으며, 각 문서의 대상 독자와 목적이 명확히 정의되어 있습니다.
-
-```
-docs/
-├── INDEX.md                      # 📍 이 파일 - 문서 탐색 가이드
-├── CONTRIBUTING.md               # ✍️ 문서 작성 규칙
-│
-├── 01-planning/                  # 📋 기획 및 설계
-│   ├── PRD.md                   # 제품 요구사항 문서
-│   ├── SRS.md                   # 소프트웨어 요구사항 명세
-│   └── architecture.md          # 시스템 아키텍처
-│
-├── 02-development/               # 🛠️ 개발 가이드
-│   ├── api-integration.md       # API 통합 가이드
-│   └── tools-reference.md       # MCP 도구 레퍼런스
-│
-├── 03-project-management/        # 📊 프로젝트 관리
-│   └── tasks.md                 # 개발 태스크 및 상태
-│
-└── 04-testing/                   # 🧪 테스트 문서
-    ├── test-spec-phase1.md      # Phase 1 테스트 스펙
-    └── test-results-phase1.md   # Phase 1 테스트 결과 통합본
-```
+**마지막 업데이트**: 2026-02-16 (문서 정리 완료)
+**총 문서**: 19개 (정리 전: 36개 → 정리 후: 19개, **47% 감소**)
 
 ---
 
-## 📋 1. 기획 및 설계 문서
+## 🎯 빠른 시작
 
-프로젝트의 비전, 요구사항, 시스템 설계를 정의하는 문서들입니다.
+새로운 팀원이라면 다음 순서로 읽어보세요:
+
+1. [README.md](../README.md) - 프로젝트 개요 및 설치
+2. [CLAUDE.md](../CLAUDE.md) - Claude Code용 프로젝트 가이드
+3. [PRD.md](01-planning/PRD.md) - 프로젝트 목적 및 비전
+4. [ARCHITECTURE.md](02-development/ARCHITECTURE.md) - 시스템 구조
+
+---
+
+## 📋 기획 및 설계
 
 ### [PRD.md](01-planning/PRD.md)
-- **제목**: Product Requirements Document
-- **대상 독자**: PM, 개발자, 이해관계자
-- **목적**: 제품의 목표, 문제 정의, 솔루션 방향성 명시
+- **제목**: 프로젝트 요구사항 정의 (Product Requirements Document)
+- **목적**: BOJ + 프로그래머스 통합 학습 도우미의 비전, 문제점, 솔루션
 - **주요 내용**:
-  - 프로젝트 비전 및 한 줄 정의
-  - 현재 BOJ 학습의 문제점 분석
-  - 핵심 기능 및 부가 기능
-  - 사용 예시 시나리오
-  - Phase별 개발 계획
+  - 핵심 기능 (BOJ 8개 도구, 프로그래머스 2개 도구)
+  - **통합 스킬 규칙** (섹션 6): 플랫폼 자동 선택 로직
+  - 사용 예시, Phase별 개발 계획
 
 ### [SRS.md](01-planning/SRS.md)
-- **제목**: Software Requirement Specification
-- **대상 독자**: 개발자, QA 엔지니어
-- **목적**: 기술적 요구사항 및 API 명세 정의
-- **주요 내용**:
-  - solved.ac API 조사 및 엔드포인트 상세
-  - 기능별 요구사항
-  - 비기능적 요구사항 (성능, 보안, 확장성)
-  - 제약 조건
+- **제목**: 시스템 요구사항 명세 (Software Requirements Specification)
+- **목적**: solved.ac API 조사 및 기술적 요구사항
+- **주요 내용**: API 엔드포인트, 기능/비기능 요구사항, 제약 조건
 
-### [architecture.md](01-planning/architecture.md)
-- **제목**: 시스템 아키텍처 문서
-- **대상 독자**: 개발자, 시스템 설계자
-- **목적**: 시스템 구조 및 컴포넌트 관계 설명
+### [rate-limiting.md](01-planning/rate-limiting.md)
+- **제목**: Rate Limiting 설계 및 구현
+- **목적**: solved.ac API 호출 제한 (Token Bucket 알고리즘)
+- **주요 내용**: 설계, 구현, 테스트, 통합 가이드
+
+### [lru-caching.md](01-planning/lru-caching.md)
+- **제목**: LRU 캐싱 설계 및 구현
+- **목적**: 메모리 효율적 캐싱 전략
+- **주요 내용**: 설계, 구현, 성능 지표, 통합 가이드
+
+---
+
+## 🛠️ 개발 문서
+
+### [ARCHITECTURE.md](02-development/ARCHITECTURE.md)
+- **제목**: 시스템 아키텍처
+- **목적**: 프롬프트 기반 아키텍처 (Phase 5), Keyless 설계
 - **주요 내용**:
-  - 전체 시스템 다이어그램 (Mermaid)
-  - 컴포넌트 상세 설명
+  - 아키텍처 진화 (Phase 1→5)
+  - 시스템 구조 및 컴포넌트
   - 데이터 흐름
-  - 기술 스택 및 설계 결정사항
-  - 확장성 및 성능 전략
+  - 웹 스크래핑 전략 (BOJ, Programmers)
 
-### [development-plan.md](01-planning/development-plan.md) 🆕
-- **제목**: 개발 계획서 (통합 로드맵)
-- **대상 독자**: PM, 개발자, 전체 팀
-- **목적**: Phase별 개발 계획 통합 관리
-- **주요 내용**:
-  - Phase 1-3 완료 현황 요약
-  - Phase 4 확장 기능 계획 (상세)
-  - Phase 5 프롬프트 기반 전환 계획
-  - 향후 로드맵 (Phase 6-7)
-
-### [keyless-architecture.md](01-planning/keyless-architecture.md)
-- **제목**: Keyless MCP 아키텍처 문서 (통합본)
-- **대상 독자**: 개발자, 시스템 설계자
-- **목적**: Phase 3 Keyless 아키텍처 설계 및 검증 결과
-- **주요 내용**:
-  - 아키텍처 원칙 (Zero Configuration, Deterministic Output)
-  - 변경 이유 및 근거 (LLM 기반 vs Keyless)
-  - 시스템 아키텍처 다이어그램
-  - 데이터 구조 설계 (ProblemAnalysis, ReviewTemplate)
-  - 데이터 흐름 (Sequence Diagram)
-  - 구현 상태 및 검증 결과
-  - Tradeoffs 분석 (5개 측면 비교)
-
-### [prompt-architecture-design.md](01-planning/prompt-architecture-design.md)
-- **제목**: 프롬프트 기반 아키텍처 설계서
-- **대상 독자**: 개발자, 시스템 설계자
-- **목적**: 하드코딩 힌트 → 프롬프트 기반 전환 설계 (Phase 5)
-- **주요 내용**:
-  - Before/After 데이터 흐름 (Mermaid)
-  - 타입 시스템 변경 (제거/추가/유지)
-  - 프롬프트 시스템 설계 (3단계 힌트 가이드)
-  - 서비스 변경 설계 (1,453줄 → ~200줄, 86% 감소)
-  - 마이그레이션 계획 및 Breaking Changes
-
-### [rate-limiting-design.md](01-planning/rate-limiting-design.md) 🆕
-- **제목**: Rate Limiting 설계 문서 (Phase 4.2)
-- **대상 독자**: 개발자, 시스템 설계자
-- **목적**: solved.ac API 호출 제한 설계 (Token Bucket 알고리즘)
-- **주요 내용**:
-  - 문제 정의 및 요구사항
-  - Token Bucket 알고리즘 설명
-  - 클래스 설계 (RateLimiter)
-  - API 통합 계획 (solvedac-client.ts)
-  - 테스트 계획 (단위, 통합, 부하)
-  - 시스템 영향 분석
-
----
-
-## 🛠️ 2. 개발 가이드
-
-개발자가 프로젝트를 작업할 때 참고하는 실용적 가이드입니다.
-
-### [api-integration.md](02-development/api-integration.md)
-- **제목**: solved.ac API 통합 가이드
-- **대상 독자**: 백엔드 개발자
-- **목적**: API 사용법 및 베스트 프랙티스 제공
-- **주요 내용**:
-  - API 개요 및 인증
-  - 엔드포인트 상세 (파라미터, 응답 형식)
-  - 에러 처리 전략
-  - 코드 예제
-  - 캐싱 및 레이트 리밋 처리
-
-### [tools-reference.md](02-development/tools-reference.md)
+### [TOOLS.md](02-development/TOOLS.md)
 - **제목**: MCP 도구 레퍼런스
-- **대상 독자**: MCP 도구 개발자, Claude 사용자
-- **목적**: MCP 도구의 입출력 스키마 및 사용법 문서화
+- **목적**: 모든 MCP 도구의 입출력 스키마 및 사용법
 - **주요 내용**:
-  - 도구 개요 및 목록
-  - 각 도구의 입력 스키마
-  - 출력 형식 및 예시
-  - 사용 시나리오
+  - BOJ 도구 (analyze_problem, generate_hint, generate_review_template 등)
+  - 프로그래머스 도구 (search_programmers_problems, get_programmers_problem)
+  - CSS Selectors 및 사용 예시
 
-### [rate-limiting-implementation.md](02-development/rate-limiting-implementation.md) 🆕
-- **제목**: Rate Limiting 구현 가이드 (Phase 4.2)
-- **대상 독자**: 백엔드 개발자
-- **목적**: Rate Limiter 상세 구현 지침
-- **주요 내용**:
-  - Token Bucket 알고리즘 구현 상세
-  - TypeScript 코드 예제 (RateLimiter 클래스)
-  - API 통합 방법 (solvedac-client.ts 수정)
-  - 테스트 코드 예제 (단위, 통합, 부하)
-  - 구현 순서 및 체크리스트
-  - 트러블슈팅 가이드
+### [EXTERNAL_API.md](02-development/EXTERNAL_API.md)
+- **제목**: 외부 API 통합 가이드
+- **목적**: solved.ac API 사용법
+- **주요 내용**: 엔드포인트, 에러 처리, 캐싱, 코드 예제
 
 ---
 
-## 📊 3. 프로젝트 관리
+## 📊 프로젝트 관리
 
-프로젝트 진행 상황, 태스크, 마일스톤을 추적하는 문서입니다.
+### [TASKS.md](03-project-management/TASKS.md)
+- **제목**: 현재 태스크 관리
+- **목적**: Phase별 작업 항목 및 진행 상황 추적
+- **주요 내용**: Phase 1-7 태스크, 상태, 우선순위, 인수 조건
 
-### [tasks.md](03-project-management/tasks.md)
-- **제목**: 개발 태스크 목록 및 상태 관리
-- **대상 독자**: PM, 개발자, QA
-- **목적**: 작업 항목 및 진행 상황 실시간 추적
-- **주요 내용**:
-  - Phase별 태스크 목록
-  - 태스크 상태 (✅ DONE, 🚧 IN_PROGRESS, 📋 TODO)
-  - 우선순위 및 담당자
-  - 인수 조건 (Acceptance Criteria)
-  - 블로커 및 의존성
-
-**업데이트 주기**: 매일 (개발 진행 시)
-**담당 에이전트**: project-planner, fullstack-developer
+### [tasks-backup-20260215.md](03-project-management/tasks-backup-20260215.md)
+- **제목**: 태스크 백업 (2026-02-15)
+- **목적**: 과거 태스크 기록 보존
+- **참고**: 역사적 기록용, TASKS.md를 대신 참조하세요
 
 ---
 
-## 🧪 4. 테스트 문서
+## 🧪 테스트 문서
 
-테스트 계획, 실행, 결과를 기록하는 문서입니다.
+### [README.md](04-testing/README.md)
+- **제목**: 테스트 개요
+- **목적**: 테스트 전략 및 실행 방법
 
-### [test-spec-phase1.md](04-testing/test-spec-phase1.md)
-- **제목**: Phase 1 테스트 스펙
-- **대상 독자**: QA 엔지니어, 개발자
-- **목적**: 테스트 케이스 및 검증 기준 정의
-- **주요 내용**:
-  - 테스트 목표 및 범위
-  - 테스트 케이스 목록 (입력, 예상 출력, 검증 조건)
-  - Edge Case 및 에러 시나리오
-  - 커버리지 목표
+### Phase별 테스트 스펙
 
-### [test-results-phase1.md](04-testing/test-results-phase1.md)
-- **제목**: Phase 1 테스트 결과 통합본
-- **대상 독자**: PM, QA, 개발자
-- **목적**: 테스트 실행 결과 및 품질 메트릭 리포트
-- **주요 내용**:
-  - 테스트 실행 요약 (통과율, 실행 시간)
-  - 커버리지 분석
-  - 발견된 이슈 및 해결 내역
-  - Phase 완료 체크리스트
-  - 다음 단계 권장사항
+- [01-spec-phase1.md](04-testing/01-spec-phase1.md) - Phase 1 (검색 기능)
+- [02-spec-phase2.md](04-testing/02-spec-phase2.md) - Phase 2 (태그 검색)
+- [03-spec-phase3.md](04-testing/03-spec-phase3.md) - Phase 3 (Keyless 아키텍처)
+- [test-spec-phase4-2.md](04-testing/test-spec-phase4-2.md) - Phase 4.2 (Rate Limiting)
+- [test-spec-phase4-4.md](04-testing/test-spec-phase4-4.md) - Phase 4.4 (LRU 캐싱)
+- [test-spec-phase7.md](04-testing/test-spec-phase7.md) - Phase 7 (프로그래머스 통합)
 
-**참고**: 이 문서는 다음 파일들을 통합한 것입니다:
-- `phase1-completion.md` (구현 완료 보고서)
-- `test-report-phase1.md` (테스트 결과)
-- `TEST_SUMMARY.md` (테스트 요약)
+### [e2e-manual-test-guide.md](04-testing/e2e-manual-test-guide.md)
+- **제목**: E2E 테스트 가이드
+- **목적**: 수동 E2E 테스트 절차 및 시나리오
 
 ---
 
-## 📖 문서 읽기 가이드
+## 🔍 빠른 찾기
 
-### 신규 팀원을 위한 추천 순서
-1. **프로젝트 이해**: [CLAUDE.md](../CLAUDE.md) → [PRD.md](01-planning/PRD.md)
-2. **시스템 파악**: [architecture.md](01-planning/architecture.md)
-3. **개발 시작**: [api-integration.md](02-development/api-integration.md)
-4. **작업 할당**: [tasks.md](03-project-management/tasks.md)
+### 주제별 문서 찾기
 
-### 역할별 중요 문서
-
-| 역할 | 필수 문서 | 참고 문서 |
-|------|-----------|-----------|
-| **Project Manager** | PRD, tasks.md | SRS, test-results-phase1.md |
-| **개발자** | architecture.md, api-integration.md, tools-reference.md | SRS, test-spec-phase1.md |
-| **QA 엔지니어** | test-spec-phase1.md, test-results-phase1.md | SRS, architecture.md |
-| **기술 문서 작성자** | 모든 문서 | CONTRIBUTING.md |
-
-### 에이전트별 문서 책임
-
-| 에이전트 | 작성/업데이트 책임 문서 |
-|----------|------------------------|
-| **project-planner** | PRD, SRS, tasks.md |
-| **fullstack-developer** | architecture.md, api-integration.md, tools-reference.md |
-| **qa-testing-agent** | test-spec-phase1.md, test-results-phase1.md |
-| **technical-writer** | 모든 문서 (리뷰, 개선, 일관성 유지) |
-
----
-
-## 🔍 문서 검색 팁
-
-### 특정 정보를 찾고 싶을 때
-
-**"이 프로젝트가 왜 만들어졌나요?"**
+**"프로젝트 목적이 뭔가요?"**
 → [PRD.md](01-planning/PRD.md) - 1.2 문제 정의
 
-**"MCP 서버 구조는 어떻게 되나요?"**
-→ [architecture.md](01-planning/architecture.md) - 2. 아키텍처 다이어그램
+**"시스템 구조는 어떻게 되나요?"**
+→ [ARCHITECTURE.md](02-development/ARCHITECTURE.md) - 시스템 구조
 
-**"solved.ac API 어떻게 호출하나요?"**
-→ [api-integration.md](02-development/api-integration.md) - 5. 코드 예제
+**"API를 어떻게 호출하나요?"**
+→ [EXTERNAL_API.md](02-development/EXTERNAL_API.md) - 코드 예제
 
-**"search_problems 도구 어떻게 사용하나요?"**
-→ [tools-reference.md](02-development/tools-reference.md) - search_problems
+**"MCP 도구를 어떻게 사용하나요?"**
+→ [TOOLS.md](02-development/TOOLS.md) - 도구별 사용법
 
 **"현재 어떤 작업이 진행 중인가요?"**
-→ [tasks.md](03-project-management/tasks.md) - Phase 1
+→ [TASKS.md](03-project-management/TASKS.md) - 진행 상황
 
-**"테스트 커버리지가 얼마나 되나요?"**
-→ [test-results-phase1.md](04-testing/test-results-phase1.md) - 커버리지 분석
+**"프로그래머스는 어떻게 스크래핑하나요?"**
+→ [ARCHITECTURE.md](02-development/ARCHITECTURE.md) - 웹 스크래핑 전략
+
+**"플랫폼 자동 선택은 어떻게 동작하나요?"**
+→ [PRD.md](01-planning/PRD.md) - 섹션 6 통합 스킬 규칙
+→ [.claude/skills/algokit.md](../.claude/skills/algokit.md) - 스킬 정의
+
+**"Rate Limiting은 어떻게 구현하나요?"**
+→ [rate-limiting.md](01-planning/rate-limiting.md) - 설계 및 구현
+
+---
+
+## 💡 역할별 필독 문서
+
+### Project Manager
+- **필수**: [PRD.md](01-planning/PRD.md), [TASKS.md](03-project-management/TASKS.md)
+- **참고**: [SRS.md](01-planning/SRS.md)
+
+### 개발자
+- **필수**: [ARCHITECTURE.md](02-development/ARCHITECTURE.md), [TOOLS.md](02-development/TOOLS.md), [EXTERNAL_API.md](02-development/EXTERNAL_API.md)
+- **참고**: [SRS.md](01-planning/SRS.md), 테스트 스펙 문서
+
+### QA 엔지니어
+- **필수**: 테스트 스펙 문서 (04-testing/), [e2e-manual-test-guide.md](04-testing/e2e-manual-test-guide.md)
+- **참고**: [SRS.md](01-planning/SRS.md), [ARCHITECTURE.md](02-development/ARCHITECTURE.md)
+
+### Technical Writer
+- **필수**: 모든 문서
+- **참고**: [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ---
 
 ## 📝 문서 작성 규칙
 
-문서를 새로 작성하거나 수정할 때는 [CONTRIBUTING.md](CONTRIBUTING.md)의 가이드라인을 따라주세요.
+문서를 작성하거나 수정할 때는 [CONTRIBUTING.md](CONTRIBUTING.md)를 참조하세요.
 
 **핵심 원칙**:
-- **명확성**: 기술 용어는 최초 사용 시 정의
-- **일관성**: 동일한 템플릿과 형식 사용
-- **최신성**: 코드 변경 시 관련 문서 동시 업데이트
-- **접근성**: 누구나 이해할 수 있는 언어 사용
+- **명확성**: 기술 용어는 정의하고 사용
+- **일관성**: 템플릿과 형식 준수
+- **최신성**: 코드 변경 시 문서도 업데이트
+- **접근성**: 누구나 이해할 수 있는 언어
 
 ---
 
-## 🔄 문서 업데이트 이력
+## 🔄 최근 변경 이력
 
 | 날짜 | 변경 내용 | 담당자 |
 |------|-----------|--------|
-| 2026-02-15 | Phase 4 Rate Limiting 설계 문서 추가 | technical-writer |
-| 2026-02-15 | - rate-limiting-design.md (설계 문서) | project-manager |
-| 2026-02-15 | - rate-limiting-implementation.md (구현 가이드) | project-manager |
-| 2026-02-15 | tasks.md 업데이트 (Task 4.2 진행 상황 반영) | technical-writer |
-| 2026-02-15 | CLAUDE.md 업데이트 (Phase 4 진행 중 표시) | technical-writer |
-| 2026-02-14 | 01-planning 문서 통합 및 재구성 | technical-writer |
-| 2026-02-14 | - development-plan.md 신설 (Phase 통합 관리) | technical-writer |
-| 2026-02-14 | - keyless-architecture.md 통합 (3개 → 1개) | technical-writer |
-| 2026-02-14 | - phase4-plan.md, phase4-summary.md 제거 | technical-writer |
-| 2026-02-13 | 문서 체계 재구성 및 INDEX.md 작성 | technical-writer |
-| 2026-02-13 | Phase 1 테스트 문서 통합 | technical-writer |
-| 2026-02-13 | 디렉토리 구조 개편 (카테고리별 분류) | technical-writer |
+| 2026-02-16 | 문서 대대적 정리 (36개 → 19개, 47% 감소) | technical-writer |
+| 2026-02-16 | TOOLS.md에 프로그래머스 CSS Selectors 통합 | technical-writer |
+| 2026-02-16 | ARCHITECTURE.md에 웹 스크래핑 전략 추가 | technical-writer |
+| 2026-02-16 | 중복 문서 13개 삭제 (통합 완료) | technical-writer |
+| 2026-02-16 | 구버전 테스트 결과 6개 삭제 | technical-writer |
+| 2026-02-16 | 마케팅 폴더 삭제 (4개 파일) | technical-writer |
+| 2026-02-15 | Rate Limiting 문서 통합 (design + implementation → rate-limiting.md) | technical-writer |
+| 2026-02-15 | LRU 캐싱 문서 통합 | technical-writer |
 
 ---
 
-## 💡 도움이 필요하신가요?
+## 🗂️ 정리 완료 (2026-02-16)
 
-- **문서 작성 가이드**: [CONTRIBUTING.md](CONTRIBUTING.md)
-- **프로젝트 전체 가이드**: [CLAUDE.md](../CLAUDE.md)
+### 삭제된 문서 (19개)
+
+**프로젝트 관리** (3개):
+- task-programmers-url-parsing.md (완료된 태스크)
+- documentation-cleanup-plan.md (작업 완료)
+- document-organization-guide.md (INDEX.md에 통합)
+
+**기획** (3개):
+- rate-limiting-design.md (rate-limiting.md에 통합)
+- programmers-analysis.md (분석 완료, 불필요)
+- programmers-puppeteer-implementation.md (ARCHITECTURE.md에 핵심만 통합)
+
+**개발** (3개):
+- tools-reference.md (TOOLS.md와 중복)
+- programmers-selectors.md (TOOLS.md에 통합)
+- web-scraping-guide.md (ARCHITECTURE.md에 통합)
+
+**테스트 결과** (6개):
+- 01-results-phase1.md
+- 02-results-phase2.md
+- 03-results-phase3-red.md
+- 03-results-phase3.md
+- test-results-phase3-keyless.md
+- coverage-recovery-report.md
+
+**마케팅** (4개):
+- 전체 폴더 삭제 (프로덕션 불필요)
+
+### 통합 완료
+
+1. **TOOLS.md**:
+   - tools-reference.md 내용 병합
+   - programmers-selectors.md의 CSS Selectors 추가
+
+2. **ARCHITECTURE.md**:
+   - web-scraping-guide.md 핵심 내용 통합
+   - programmers-puppeteer-implementation.md 핵심만 추가
+
+3. **rate-limiting.md**:
+   - rate-limiting-design.md + rate-limiting-implementation.md 통합
+
+4. **lru-caching.md**:
+   - 설계 + 구현 통합 문서
+
+---
+
+## 💬 도움이 필요하신가요?
+
+- **문서 작성**: [CONTRIBUTING.md](CONTRIBUTING.md)
+- **프로젝트 가이드**: [CLAUDE.md](../CLAUDE.md)
 - **에이전트 정의**: [.claude/agents/](../.claude/agents/)
 
 **문서 관련 문의**: technical-writer 에이전트에게 요청하세요.

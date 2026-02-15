@@ -490,6 +490,49 @@ const result = await mcpClient.call('search_programmers_problems', {
 - 최초 응답: 3-5초 (Puppeteer 브라우저 실행)
 - 캐시 응답: < 100ms
 
+**CSS Selectors (검색 페이지)**:
+```typescript
+const SELECTORS = {
+  // 문제 목록 테이블
+  problemRows: 'table tbody tr',
+
+  // 문제 제목 및 링크
+  titleLink: 'td.title a[href*="/lessons/"]',
+
+  // 카테고리
+  category: 'td.title small.part-title',
+
+  // 난이도
+  level: 'td.level span[class*="level-"]',
+
+  // 완료한 사람
+  finishedCount: 'td.finished-count',
+
+  // 정답률
+  acceptanceRate: 'td.acceptance-rate',
+};
+```
+
+**HTML 구조**:
+```html
+<table>
+  <tbody>
+    <tr>
+      <td class="status"></td>
+      <td class="title">
+        <a href="/learn/courses/30/lessons/451808">숫자 야구</a>
+        <small class="part-title">연습문제</small>
+      </td>
+      <td class="level">
+        <span class="level-3">Lv. 3</span>
+      </td>
+      <td class="finished-count">350명</td>
+      <td class="acceptance-rate">4%</td>
+    </tr>
+  </tbody>
+</table>
+```
+
 ---
 
 ### 9. get_programmers_problem

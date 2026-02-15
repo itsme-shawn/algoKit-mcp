@@ -512,5 +512,62 @@ buildHintGuides(problem) {
 
 ---
 
+## 웹 스크래핑 전략
+
+### BOJ (백준 온라인 저지)
+
+**특징**:
+- 정적 HTML 페이지 (SSR)
+- cheerio 기반 파싱
+- robots.txt 허용 (`/problem/` 경로)
+
+**Rate Limiting**:
+- 요청 간격: 3초
+- 재시도: 최대 2회
+- 타임아웃: 10초
+
+**캐싱**:
+- TTL: 30일 (문제 본문 거의 변경 없음)
+- LRU 캐시: 50개 항목
+
+**User-Agent**:
+```
+Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36...
+```
+**근거**: BOJ는 브라우저 요청을 기대하며, Rate Limiting + 장기 캐싱으로 서버 부하 최소화
+
+### Programmers (프로그래머스)
+
+**하이브리드 아키텍처**:
+- **검색 페이지**: SPA → Puppeteer 필수
+- **문제 상세**: SSR → cheerio 사용 (빠르고 가벼움)
+
+**검색 페이지 (Puppeteer)**:
+- 동적 콘텐츠 렌더링
+- 최초 응답: 3-5초
+- 브라우저 인스턴스 재사용 (BrowserPool)
+- 캐싱: TTL 30분
+
+**문제 상세 (cheerio)**:
+- 정적 HTML 파싱
+- 응답 시간: 500ms-1초
+- 캐싱: TTL 30일
+
+**Rate Limiting**:
+- 검색: 초당 1회 (보수적)
+- 문제 상세: 초당 5회
+
+**윤리적 스크래핑 원칙**:
+1. robots.txt 준수
+2. 적절한 요청 간격 (Rate Limiting)
+3. 캐싱 최대 활용 (불필요한 요청 방지)
+4. 비상업적 사용 (교육 목적)
+
+**참고 문서**:
+- [Web Scraping 가이드](web-scraping-guide.md) (삭제 예정 - 내용 통합 완료)
+- [프로그래머스 아키텍처](programmers-puppeteer-implementation.md) (삭제 예정 - 핵심만 통합)
+
+---
+
 **문서 작성자**: technical-writer
-**최종 검토일**: 2026-02-14
+**최종 검토일**: 2026-02-16
