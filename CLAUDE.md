@@ -14,23 +14,44 @@
 
 ## 핵심 기능
 
-### 1. 필수 기능 (Phase 5 완료) ✅
-- **analyze_problem**: 문제 분석 및 힌트 가이드 프롬프트 제공
-  - 3단계 힌트 가이드, 난이도 컨텍스트, 태그 정보
-  - **프롬프트 기반**: 가이드 프롬프트 제공 (< 500ms), Claude Code가 힌트 생성
+### 1. BOJ 도구 ✅
 
-- **generate_review_template**: 복습 템플릿 및 가이드 프롬프트 생성
-  - 마크다운 템플릿, 문제 분석 정보, 관련 문제 추천
-  - **프롬프트 기반**: 템플릿 + 가이드 제공, Claude Code가 대화형으로 복습 작성
-
-### 2. 부가 기능 (Phase 1-2 완료) ✅
+#### 기본 조회
 - **search_problems**: 필터 기반 BOJ 문제 검색
 - **get_problem**: BOJ 문제 상세 정보 조회
 - **search_tags**: 알고리즘 태그 검색
 
-### 3. 프로그래머스 지원 (Phase 7 진행 중) 🚧
-- **search_programmers_problems**: 프로그래머스 문제 검색 (Puppeteer, 3-5초) ✅
-- **get_programmers_problem**: 프로그래머스 문제 상세 조회 (cheerio, 1-2초) ✅
+#### 학습 지원 (Phase 5 완료)
+- **analyze_problem_boj**: BOJ 문제 분석 및 힌트 가이드 프롬프트 제공
+  - 3단계 힌트 가이드, 난이도 컨텍스트, 태그 정보
+  - **프롬프트 기반**: 가이드 프롬프트 제공 (< 500ms), Claude Code가 힌트 생성
+
+- **generate_hint_boj**: BOJ 문제 힌트 생성
+  - 단계별 힌트 제공 (Level 1-3)
+  - 프롬프트 기반 맞춤형 힌트
+
+- **generate_review_template_boj**: BOJ 문제 복습 템플릿 생성
+  - 마크다운 템플릿, 문제 분석 정보, 관련 문제 추천
+  - **프롬프트 기반**: 템플릿 + 가이드 제공, Claude Code가 대화형으로 복습 작성
+
+#### 코드 분석 (Phase 6 완료)
+- **fetch_problem_content_boj**: BOJ 문제 본문 스크래핑
+- **analyze_code_submission_boj**: BOJ 코드 분석 및 피드백
+
+### 2. 프로그래머스 도구
+
+#### 기본 조회 (Phase 7 완료) ✅
+- **search_programmers_problems**: 프로그래머스 문제 검색 (Puppeteer, 3-5초)
+- **get_programmers_problem**: 프로그래머스 문제 상세 조회 (cheerio, 1-2초)
+
+#### 학습 지원 (Phase 7+ 구현 예정) 🚧
+- **analyze_problem_programmers**: 프로그래머스 문제 분석 (스텁)
+- **generate_hint_programmers**: 프로그래머스 힌트 생성 (스텁)
+- **generate_review_template_programmers**: 프로그래머스 복습 템플릿 (스텁)
+
+#### 코드 분석 (Phase 7+ 구현 예정) 🚧
+- **fetch_problem_content_programmers**: 프로그래머스 문제 본문 (스텁)
+- **analyze_code_submission_programmers**: 프로그래머스 코드 분석 (스텁)
 
 ### 4. 향후 계획 (Phase 4) 🚧 진행 중
 - **Rate Limiting**: ✅ 구현 완료 (Token Bucket 알고리즘)
