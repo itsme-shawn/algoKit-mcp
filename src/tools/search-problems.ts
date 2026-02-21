@@ -20,6 +20,16 @@ export const SearchProblemsInputSchema = z.object({
     .union([
       z.number().int().min(1).max(30),
       z.string().transform((val, ctx) => {
+        // 숫자 문자열이면 숫자로 변환 (예: "16" → 16)
+        const numVal = Number(val);
+        if (!isNaN(numVal) && Number.isInteger(numVal)) {
+          if (numVal < 1 || numVal > 30) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: '레벨은 1-30 사이여야 합니다.' });
+            return z.NEVER;
+          }
+          return numVal;
+        }
+        // 티어 문자열 파싱 (예: "실버 3", "Gold I")
         try {
           return parseTierString(val);
         } catch (error) {
@@ -37,6 +47,16 @@ export const SearchProblemsInputSchema = z.object({
     .union([
       z.number().int().min(1).max(30),
       z.string().transform((val, ctx) => {
+        // 숫자 문자열이면 숫자로 변환 (예: "17" → 17)
+        const numVal = Number(val);
+        if (!isNaN(numVal) && Number.isInteger(numVal)) {
+          if (numVal < 1 || numVal > 30) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: '레벨은 1-30 사이여야 합니다.' });
+            return z.NEVER;
+          }
+          return numVal;
+        }
+        // 티어 문자열 파싱 (예: "실버 3", "Gold I")
         try {
           return parseTierString(val);
         } catch (error) {

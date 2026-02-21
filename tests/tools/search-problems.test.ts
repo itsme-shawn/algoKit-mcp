@@ -116,6 +116,22 @@ describe('search_problems 도구', () => {
         expect(result.success).toBe(false);
       });
 
+      it('숫자 문자열("16")을 숫자(16)로 변환해야 함', () => {
+        const input = { level_min: '16', level_max: '17' };
+
+        const result = SearchProblemsInputSchema.safeParse(input);
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.level_min).toBe(16);
+          expect(result.data.level_max).toBe(17);
+        }
+      });
+
+      it('범위를 벗어난 숫자 문자열("31")은 실패해야 함', () => {
+        const result = SearchProblemsInputSchema.safeParse({ level_min: '31' });
+        expect(result.success).toBe(false);
+      });
+
       it('숫자와 문자열 혼용 가능해야 함', () => {
         const mixedInput = {
           level_min: 10,
