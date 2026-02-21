@@ -2,7 +2,7 @@
  * search_programmers_problems 도구 통합 테스트
  */
 
-import { searchProgrammersProblemsTool } from '../src/tools/search-programmers-problems.js';
+import { searchProgrammersProblemsTool } from '../src/tools/search-problems-programmers.js';
 
 async function testSearchProgrammersProblems() {
   console.log('🧪 search_programmers_problems 도구 통합 테스트\n');
