@@ -2,7 +2,7 @@
 
 **BOJ 학습 도우미 MCP Server**
 **버전**: 3.0 (Prompt-based Architecture)
-**마지막 업데이트**: 2026-02-14
+**마지막 업데이트**: 2026-02-21
 
 ---
 
@@ -538,15 +538,15 @@ Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36...
 
 ### Programmers (프로그래머스)
 
-**하이브리드 아키텍처**:
-- **검색 페이지**: SPA → Puppeteer 필수
+**아키텍처**:
+- **검색**: 내부 JSON API (`GET /api/v2/school/challenges/`) 사용
 - **문제 상세**: SSR → cheerio 사용 (빠르고 가벼움)
 
-**검색 페이지 (Puppeteer)**:
-- 동적 콘텐츠 렌더링
-- 최초 응답: 3-5초
-- 브라우저 인스턴스 재사용 (BrowserPool)
+**검색 (내부 JSON API)**:
+- 인증 불필요 (공개 API)
+- 응답 시간: < 1초
 - 캐싱: TTL 30분
+- Puppeteer 의존성 없음
 
 **문제 상세 (cheerio)**:
 - 정적 HTML 파싱
