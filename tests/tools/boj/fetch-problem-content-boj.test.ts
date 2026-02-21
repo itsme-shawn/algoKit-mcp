@@ -9,7 +9,7 @@ import {
   handleFetchProblemContentBOJ,
   FetchProblemContentBOJInputSchema,
   fetchProblemContentBOJTool,
-} from '../../src/tools/fetch-problem-content-boj.js';
+} from '../../../src/tools/boj/fetch-problem-content-boj.js';
 
 // Mock 함수 선언 (vi.hoisted로 호이스팅)
 const { mockFetchProblemPage, mockParseProblemContent } = vi.hoisted(() => ({
@@ -18,7 +18,7 @@ const { mockFetchProblemPage, mockParseProblemContent } = vi.hoisted(() => ({
 }));
 
 // BOJScraper 모킹
-vi.mock('../../src/api/boj-scraper.js', () => {
+vi.mock('../../../src/api/boj-scraper.js', () => {
   // BojFetchError 클래스 정의 (mock 팩토리 내부)
   class BojFetchError extends Error {
     constructor(
@@ -40,7 +40,7 @@ vi.mock('../../src/api/boj-scraper.js', () => {
 });
 
 // html-parser 모킹
-vi.mock('../../src/utils/html-parser.js', () => {
+vi.mock('../../../src/utils/html-parser.js', () => {
   // HtmlParseError 클래스 정의 (mock 팩토리 내부)
   class HtmlParseError extends Error {
     constructor(message: string, public field: string) {

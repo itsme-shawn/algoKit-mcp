@@ -9,9 +9,9 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { GenerateReviewTemplateBOJInputSchema, generateReviewTemplateBOJTool } from '../../src/tools/generate-review-template-boj.js';
-import type { ReviewTemplateGenerator } from '../../src/services/review-template-generator.js';
-import { ProblemNotFoundError } from '../../src/api/types.js';
+import { GenerateReviewTemplateBOJInputSchema, generateReviewTemplateBOJTool } from '../../../src/tools/boj/generate-review-template-boj.js';
+import type { ReviewTemplateGenerator } from '../../../src/services/review-template-generator.js';
+import { ProblemNotFoundError } from '../../../src/api/types.js';
 
 describe('generate_review_template_boj 도구 (Keyless)', () => {
   describe('TC-KL-4.3~4.4: Zod 스키마 검증', () => {

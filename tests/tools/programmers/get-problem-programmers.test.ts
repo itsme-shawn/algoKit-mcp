@@ -2,7 +2,7 @@
  * get_programmers_problem MCP 도구 단위 테스트
  */
 import { describe, it, expect } from 'vitest';
-import { handleGetProgrammersProblem as getProgrammersProblem } from '../../src/tools/get-programmers-problem.js';
+import { handleGetProgrammersProblem as getProgrammersProblem } from '../../../src/tools/programmers/get-problem-programmers.js';
 
 describe('getProgrammersProblem', () => {
   describe('성공 케이스', () => {

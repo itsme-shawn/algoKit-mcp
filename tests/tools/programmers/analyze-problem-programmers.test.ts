@@ -6,8 +6,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   AnalyzeProblemProgrammersInputSchema,
   analyzeProblemProgrammersTool,
-} from '../../src/tools/analyze-problem-programmers.js';
-import type { ProgrammersProblemAnalyzer } from '../../src/services/programmers-problem-analyzer.js';
+} from '../../../src/tools/programmers/analyze-problem-programmers.js';
+import type { ProgrammersProblemAnalyzer } from '../../../src/services/programmers-problem-analyzer.js';
 
 describe('AnalyzeProblemProgrammersInputSchema', () => {
   it('문자열 problem_id 허용', () => {

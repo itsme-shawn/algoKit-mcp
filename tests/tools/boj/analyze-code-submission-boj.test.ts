@@ -8,15 +8,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   handleAnalyzeCodeSubmissionBOJ,
   AnalyzeCodeSubmissionBOJInputSchema,
-} from '../../src/tools/analyze-code-submission-boj.js';
-import type { ProblemContent, CodeAnalysisResult } from '../../src/types/problem-content.js';
+} from '../../../src/tools/boj/analyze-code-submission-boj.js';
+import type { ProblemContent, CodeAnalysisResult } from '../../../src/types/problem-content.js';
 
 // Mock 설정
-vi.mock('../../src/tools/fetch-problem-content-boj.js', () => ({
+vi.mock('../../../src/tools/boj/fetch-problem-content-boj.js', () => ({
   handleFetchProblemContentBOJ: vi.fn(),
 }));
 
-vi.mock('../../src/services/code-analyzer.js', () => {
+vi.mock('../../../src/services/code-analyzer.js', () => {
   return {
     CodeAnalyzer: vi.fn(function() {
       this.analyzeCode = vi.fn();
@@ -25,8 +25,8 @@ vi.mock('../../src/services/code-analyzer.js', () => {
 });
 
 // Mock 임포트
-import { handleFetchProblemContentBOJ } from '../../src/tools/fetch-problem-content-boj.js';
-import { CodeAnalyzer } from '../../src/services/code-analyzer.js';
+import { handleFetchProblemContentBOJ } from '../../../src/tools/boj/fetch-problem-content-boj.js';
+import { CodeAnalyzer } from '../../../src/services/code-analyzer.js';
 
 describe('AnalyzeCodeSubmissionBOJInputSchema', () => {
   describe('입력 검증', () => {

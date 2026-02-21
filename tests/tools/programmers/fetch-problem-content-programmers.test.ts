@@ -7,9 +7,9 @@ import {
   FetchProblemContentProgrammersInputSchema,
   fetchProblemContentProgrammersTool,
   handleFetchProblemContentProgrammers,
-} from '../../src/tools/fetch-problem-content-programmers.js';
-import type { ProgrammersScraper } from '../../src/api/programmers-scraper.js';
-import type { ProgrammersProblemDetail } from '../../src/types/programmers.js';
+} from '../../../src/tools/programmers/fetch-problem-content-programmers.js';
+import type { ProgrammersScraper } from '../../../src/api/programmers-scraper.js';
+import type { ProgrammersProblemDetail } from '../../../src/types/programmers.js';
 
 const mockDetail: ProgrammersProblemDetail = {
   problemId: '42748',

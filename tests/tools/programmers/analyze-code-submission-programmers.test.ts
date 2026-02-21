@@ -6,9 +6,9 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   AnalyzeCodeSubmissionProgrammersInputSchema,
   analyzeCodeSubmissionProgrammersTool,
-} from '../../src/tools/analyze-code-submission-programmers.js';
-import type { ProgrammersScraper } from '../../src/api/programmers-scraper.js';
-import type { ProgrammersProblemDetail } from '../../src/types/programmers.js';
+} from '../../../src/tools/programmers/analyze-code-submission-programmers.js';
+import type { ProgrammersScraper } from '../../../src/api/programmers-scraper.js';
+import type { ProgrammersProblemDetail } from '../../../src/types/programmers.js';
 
 const mockDetail: ProgrammersProblemDetail = {
   problemId: '42748',

@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { searchProblems, SearchProblemsInputSchema } from '../../src/tools/search-problems.js';
+import { searchProblems, SearchProblemsInputSchema } from '../../../src/tools/boj/search-problems-boj.js';
 
 describe('search_problems 도구', () => {
   describe('입력 스키마 검증', () => {

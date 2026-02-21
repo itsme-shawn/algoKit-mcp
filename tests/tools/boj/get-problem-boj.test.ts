@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { getProblem, GetProblemInputSchema } from '../../src/tools/get-problem.js';
+import { getProblem, GetProblemInputSchema } from '../../../src/tools/boj/get-problem-boj.js';
 
 describe('get_problem 도구', () => {
   describe('입력 스키마 검증', () => {

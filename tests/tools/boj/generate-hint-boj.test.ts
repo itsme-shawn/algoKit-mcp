@@ -8,9 +8,9 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { GenerateHintBOJInputSchema, generateHintBOJTool } from '../../src/tools/generate-hint-boj.js';
-import type { ProblemAnalyzer } from '../../src/services/problem-analyzer.js';
-import { ProblemNotFoundError } from '../../src/api/types.js';
+import { GenerateHintBOJInputSchema, generateHintBOJTool } from '../../../src/tools/boj/generate-hint-boj.js';
+import type { ProblemAnalyzer } from '../../../src/services/problem-analyzer.js';
+import { ProblemNotFoundError } from '../../../src/api/types.js';
 
 describe('generate_hint_boj 도구', () => {
   describe('Zod 스키마 검증', () => {

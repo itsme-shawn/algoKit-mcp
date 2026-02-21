@@ -6,8 +6,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   GenerateReviewTemplateProgrammersInputSchema,
   generateReviewTemplateProgrammersTool,
-} from '../../src/tools/generate-review-template-programmers.js';
-import type { ProgrammersReviewTemplateGenerator } from '../../src/services/programmers-review-template-generator.js';
+} from '../../../src/tools/programmers/generate-review-template-programmers.js';
+import type { ProgrammersReviewTemplateGenerator } from '../../../src/services/programmers-review-template-generator.js';
 
 describe('GenerateReviewTemplateProgrammersInputSchema', () => {
   it('문자열 problem_id 허용', () => {

@@ -9,9 +9,9 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { AnalyzeProblemBOJInputSchema, analyzeProblemBOJTool } from '../../src/tools/analyze-problem-boj.js';
-import type { ProblemAnalyzer } from '../../src/services/problem-analyzer.js';
-import { ProblemNotFoundError } from '../../src/api/types.js';
+import { AnalyzeProblemBOJInputSchema, analyzeProblemBOJTool } from '../../../src/tools/boj/analyze-problem-boj.js';
+import type { ProblemAnalyzer } from '../../../src/services/problem-analyzer.js';
+import { ProblemNotFoundError } from '../../../src/api/types.js';
 
 describe('analyze_problem_boj 도구 (Keyless)', () => {
   describe('TC-KL-3.3~3.5: Zod 스키마 검증', () => {

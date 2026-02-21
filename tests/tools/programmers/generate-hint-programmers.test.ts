@@ -6,8 +6,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   GenerateHintProgrammersInputSchema,
   generateHintProgrammersTool,
-} from '../../src/tools/generate-hint-programmers.js';
-import type { ProgrammersProblemAnalyzer } from '../../src/services/programmers-problem-analyzer.js';
+} from '../../../src/tools/programmers/generate-hint-programmers.js';
+import type { ProgrammersProblemAnalyzer } from '../../../src/services/programmers-problem-analyzer.js';
 
 describe('GenerateHintProgrammersInputSchema', () => {
   it('문자열 problem_id 허용', () => {

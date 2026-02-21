@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { searchTags, SearchTagsInputSchema } from '../../src/tools/search-tags.js';
+import { searchTags, SearchTagsInputSchema } from '../../../src/tools/boj/search-tags-boj.js';
 
 describe('search_tags 도구', () => {
   describe('입력 스키마 검증', () => {
