@@ -211,8 +211,8 @@ describe('tier-converter', () => {
     });
 
     describe('경계값 테스트', () => {
-      it('should throw error when level is 0', () => {
-        expect(() => getTierBadge(0)).toThrow('Level must be between 1 and 30');
+      it('should return Unrated badge when level is 0', () => {
+        expect(getTierBadge(0)).toBe('⬜ Unrated');
       });
 
       it('should throw error when level is 31', () => {

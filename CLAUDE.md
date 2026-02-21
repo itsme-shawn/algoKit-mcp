@@ -41,7 +41,7 @@
 ### 2. 프로그래머스 도구
 
 #### 기본 조회 (Phase 7 완료) ✅
-- **search_programmers_problems**: 프로그래머스 문제 검색 (Puppeteer, 3-5초)
+- **search_programmers_problems**: 프로그래머스 문제 검색 (내부 JSON API, < 1초)
 - **get_programmers_problem**: 프로그래머스 문제 상세 조회 (cheerio, 1-2초)
 
 #### 학습 지원 (Phase 7+ 구현 예정) 🚧
@@ -75,6 +75,7 @@
 - **solved.ac API**: BOJ 문제 메타데이터 (무료, 인증 불필요)
 - **vitest**: 4.0.18 (테스팅)
 - ~~**@anthropic-ai/sdk**~~: 제거됨 (Keyless 아키텍처)
+- ~~**puppeteer**~~: 제거됨 (프로그래머스 내부 JSON API로 교체)
 
 ---
 
@@ -87,7 +88,7 @@ algokit/
 │   ├── api/
 │   │   ├── solvedac-client.ts     # BOJ API 클라이언트
 │   │   ├── boj-scraper.ts         # BOJ 스크래퍼
-│   │   └── programmers-scraper.ts # 프로그래머스 스크래퍼 (Puppeteer + cheerio)
+│   │   └── programmers-scraper.ts # 프로그래머스 스크래퍼 (fetch + cheerio)
 │   ├── tools/                     # MCP 도구들
 │   ├── services/                  # 비즈니스 로직
 │   └── utils/                     # 유틸리티

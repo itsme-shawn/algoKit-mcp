@@ -456,16 +456,16 @@ const result = await mcpClient.call('generate_review_template_boj', {
 
 ### 8. search_programmers_problems
 
-**설명**: 프로그래머스 문제를 검색합니다 (Puppeteer 기반 웹 스크래핑).
+**설명**: 프로그래머스 문제를 검색합니다 (내부 JSON API 사용).
 
 **입력**:
 ```typescript
 {
   levels?: number[];        // 레벨 필터 (0-5)
-  categories?: string[];    // 카테고리 필터 (예: "해시", "스택/큐")
-  order?: string;           // 정렬 순서 (accuracy_asc/desc, level, recent, submission)
+  order?: string;           // 정렬 순서 (recent, accuracy, popular)
   page?: number;            // 페이지 번호 (기본: 1)
   query?: string;           // 검색 키워드
+  limit?: number;           // 결과 수 (최대 20)
 }
 ```
 
@@ -474,14 +474,16 @@ const result = await mcpClient.call('generate_review_template_boj', {
 {
   problems: [
     {
-      problemId: string;    // 문제 ID (예: "42576")
+      id: number;           // 문제 ID (예: 42576)
       title: string;        // 문제 제목
       level: number;        // 난이도 (0-5)
-      category: string;     // 카테고리
-      url: string;          // 문제 URL
+      partTitle: string;    // 카테고리 (예: "연습문제")
+      finishedCount: number;// 완료한 사람 수
+      acceptanceRate: number;// 정답률
     }
   ];
-  total: number;            // 총 문제 수
+  totalEntries: number;     // 총 문제 수
+  totalPages: number;       // 총 페이지 수
   page: number;             // 현재 페이지
 }
 ```
@@ -491,66 +493,23 @@ const result = await mcpClient.call('generate_review_template_boj', {
 // MCP 호출
 const result = await mcpClient.call('search_programmers_problems', {
   levels: [2, 3],
-  order: 'level',
+  order: 'recent',
   page: 1
 });
 ```
 
 **핵심 기능**:
-- 🔍 **다중 필터**: 레벨, 카테고리, 정렬 순서
+- 🔍 **다중 필터**: 레벨, 정렬 순서, 키워드
 - 📄 **페이지네이션**: 페이지 단위 결과 반환
-- ⚡ **Puppeteer 기반**: 동적 콘텐츠 파싱 (3-5초)
+- ⚡ **JSON API 기반**: Puppeteer 불필요 (< 1초)
 - 💾 **캐싱**: LRU 캐시 (TTL 30분)
 
 **제약사항**:
-- 스크래핑 대상: https://school.programmers.co.kr/learn/challenges
-- 타임아웃: 30초
+- API 엔드포인트: `GET https://school.programmers.co.kr/api/v2/school/challenges/`
+- 타임아웃: 10초
 - Rate Limiting: 초당 1회
-- 최초 응답: 3-5초 (Puppeteer 브라우저 실행)
+- 최초 응답: < 1초
 - 캐시 응답: < 100ms
-
-**CSS Selectors (검색 페이지)**:
-```typescript
-const SELECTORS = {
-  // 문제 목록 테이블
-  problemRows: 'table tbody tr',
-
-  // 문제 제목 및 링크
-  titleLink: 'td.title a[href*="/lessons/"]',
-
-  // 카테고리
-  category: 'td.title small.part-title',
-
-  // 난이도
-  level: 'td.level span[class*="level-"]',
-
-  // 완료한 사람
-  finishedCount: 'td.finished-count',
-
-  // 정답률
-  acceptanceRate: 'td.acceptance-rate',
-};
-```
-
-**HTML 구조**:
-```html
-<table>
-  <tbody>
-    <tr>
-      <td class="status"></td>
-      <td class="title">
-        <a href="/learn/courses/30/lessons/451808">숫자 야구</a>
-        <small class="part-title">연습문제</small>
-      </td>
-      <td class="level">
-        <span class="level-3">Lv. 3</span>
-      </td>
-      <td class="finished-count">350명</td>
-      <td class="acceptance-rate">4%</td>
-    </tr>
-  </tbody>
-</table>
-```
 
 ---
 

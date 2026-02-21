@@ -1,11 +1,9 @@
 /**
  * 프로그래머스 웹 스크래핑 클라이언트
  *
- * 검색 페이지: Puppeteer (SPA, JavaScript 렌더링 필요)
- * 상세 페이지: cheerio (Task 7.3에서 구현)
+ * 검색: 프로그래머스 내부 JSON API (fetch 기반)
+ * 상세 페이지: cheerio (fetch 기반)
  */
-import { Browser } from 'puppeteer';
-import { BrowserPool } from '../utils/browser-pool.js';
 import { RateLimiter } from '../utils/rate-limiter.js';
 import { LRUCache } from '../utils/lru-cache.js';
 import {
@@ -37,14 +35,12 @@ export class ProgrammersScrapeError extends Error {
  * 프로그래머스 스크래퍼
  */
 export class ProgrammersScraper {
-  private browserPool: BrowserPool;
   private rateLimiter: RateLimiter;
   private searchCache: LRUCache<string, ProgrammersProblemSummary[]>;
   private problemCache: LRUCache<string, ProgrammersProblemDetail>;
   private readonly baseUrl = 'https://school.programmers.co.kr';
 
   constructor() {
-    this.browserPool = BrowserPool.getInstance();
     // 초당 1회 요청 (보수적)
     this.rateLimiter = new RateLimiter({
       capacity: 2,
@@ -88,108 +84,96 @@ export class ProgrammersScraper {
     // Rate limiting (캐시 미스 시에만)
     await this.rateLimiter.acquire();
 
-    let browser: Browser | null = null;
-
     try {
-      // 1. BrowserPool에서 브라우저 획득
-      browser = await this.browserPool.acquire();
-      const browserPage = await browser.newPage();
+      // 1. 프로그래머스 내부 API URL 생성
+      const params = new URLSearchParams();
+      params.set('page', String(page));
+      params.set('perPage', '20');
+      params.set('order', order);
 
-      // 2. 검색 URL 생성
-      const searchUrl = this.buildSearchUrl({
-        levels,
-        order,
-        page,
-        query,
-      });
+      for (const level of levels) {
+        params.append('levels[]', String(level));
+      }
 
-      console.log(`[ProgrammersScraper] 검색 URL: ${searchUrl}`);
+      if (query) {
+        params.set('search', query);
+      }
 
-      // 3. 페이지 이동 및 로딩 대기
+      const apiUrl = `${this.baseUrl}/api/v2/school/challenges/?${params.toString()}`;
+
+      console.log(`[ProgrammersScraper] API URL: ${apiUrl}`);
+
+      // 2. API 호출
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      let apiResponse: {
+        result: Array<{
+          id: number;
+          title: string;
+          partTitle: string;
+          level: number;
+          finishedCount: number;
+          acceptanceRate: number;
+        }>;
+      };
+
       try {
-        await browserPage.goto(searchUrl, {
-          waitUntil: 'networkidle2',
-          timeout: 30000,
+        const response = await fetch(apiUrl, {
+          signal: controller.signal,
+          headers: {
+            'User-Agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            Accept: 'application/json',
+            'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+          },
         });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          throw new ProgrammersScrapeError(
+            `API 요청 실패: HTTP ${response.status}`,
+            'NAVIGATION_ERROR'
+          );
+        }
+
+        apiResponse = await response.json();
       } catch (error) {
+        clearTimeout(timeoutId);
+
+        if (error instanceof ProgrammersScrapeError) {
+          throw error;
+        }
+
+        if ((error as Error).name === 'AbortError') {
+          throw new ProgrammersScrapeError(
+            '요청이 타임아웃되었습니다 (10000ms 초과)',
+            'TIMEOUT',
+            error
+          );
+        }
+
         throw new ProgrammersScrapeError(
-          `페이지 로딩 실패: ${searchUrl}`,
+          `API 요청 실패: ${(error as Error).message}`,
           'NAVIGATION_ERROR',
           error
         );
       }
 
-      // 4. JavaScript 렌더링 대기
-      try {
-        await browserPage.waitForSelector('table tbody tr', {
-          timeout: 10000,
-        });
-      } catch (error) {
-        // 빈 결과일 수 있으므로 스크린샷 저장 후 빈 배열 반환
-        await browserPage.screenshot({
-          path: 'programmers-search-empty.png',
-        });
-
-        const rowCount = await browserPage.$$eval(
-          'table tbody tr',
-          (rows) => rows.length
-        );
-
-        if (rowCount === 0) {
-          console.log('[ProgrammersScraper] 검색 결과 없음');
-          await browserPage.close();
-          return [];
-        }
-
-        throw new ProgrammersScrapeError(
-          'table tbody tr selector를 찾을 수 없습니다',
-          'SELECTOR_NOT_FOUND',
-          error
-        );
-      }
-
-      // 5. 문제 목록 추출
+      // 3. API 응답 → ProgrammersProblemSummary 매핑
       let problems: ProgrammersProblemSummary[];
 
       try {
-        problems = await browserPage.$$eval('table tbody tr', (rows) => {
-          return rows.map((row) => {
-            const titleLink = row.querySelector(
-              'td.title a[href*="/lessons/"]'
-            );
-            const categoryEl = row.querySelector('td.title small.part-title');
-            const levelSpan = row.querySelector('td.level span[class*="level-"]');
-            const finishedEl = row.querySelector('td.finished-count');
-            const rateEl = row.querySelector('td.acceptance-rate');
-
-            const href = titleLink?.getAttribute('href') || '';
-            const problemId = href.match(/lessons\/(\d+)/)?.[1] || '';
-            const title = titleLink?.textContent?.trim() || '';
-            const category = categoryEl?.textContent?.trim() || '기타';
-            const levelClass = levelSpan?.className || '';
-            const level = parseInt(
-              levelClass.match(/level-(\d+)/)?.[1] || '0'
-            );
-
-            const finishedText = finishedEl?.textContent?.trim() || '0명';
-            const finishedCount = parseInt(
-              finishedText.replace(/,/g, '').replace('명', '') || '0'
-            );
-
-            const rateText = rateEl?.textContent?.trim() || '0%';
-            const acceptanceRate = parseInt(rateText.replace('%', '') || '0');
-
-            return {
-              problemId,
-              title,
-              level,
-              category,
-              url: `https://school.programmers.co.kr${href}`,
-              finishedCount,
-              acceptanceRate,
-            };
-          });
-        });
+        problems = (apiResponse.result ?? []).map((item) => ({
+          problemId: String(item.id),
+          title: item.title,
+          level: item.level,
+          category: item.partTitle,
+          finishedCount: item.finishedCount,
+          acceptanceRate: item.acceptanceRate,
+          url: `${this.baseUrl}/learn/courses/30/lessons/${item.id}`,
+        }));
       } catch (error) {
         throw new ProgrammersScrapeError(
           '문제 목록 파싱 실패',
@@ -198,52 +182,27 @@ export class ProgrammersScraper {
         );
       }
 
-      await browserPage.close();
-
-      // 6. 캐시에 저장 (limit 적용 전 전체 결과 저장)
+      // 4. 캐시에 저장 (limit 적용 전 전체 결과 저장)
       this.searchCache.set(cacheKey, problems);
 
-      // 7. limit 적용
+      // 5. limit 적용
       if (limit && limit > 0) {
         problems = problems.slice(0, limit);
       }
 
-      console.log(
-        `[ProgrammersScraper] ${problems.length}개 문제 검색 완료`
-      );
+      console.log(`[ProgrammersScraper] ${problems.length}개 문제 검색 완료`);
 
       return problems;
-    } finally {
-      // 7. 브라우저 반환 (필수!)
-      if (browser) {
-        await this.browserPool.release(browser);
+    } catch (error) {
+      if (error instanceof ProgrammersScrapeError) {
+        throw error;
       }
+      throw new ProgrammersScrapeError(
+        `검색 실패: ${(error as Error).message}`,
+        'NAVIGATION_ERROR',
+        error
+      );
     }
-  }
-
-  /**
-   * 검색 URL 생성
-   */
-  private buildSearchUrl(options: {
-    levels: number[];
-    order: string;
-    page: number;
-    query?: string;
-  }): string {
-    const params = new URLSearchParams();
-
-    params.set('order', options.order);
-    params.set('page', options.page.toString());
-
-    if (options.levels.length > 0) {
-      params.set('levels', options.levels.join(','));
-    }
-
-    if (options.query) {
-      params.set('query', options.query);
-    }
-
-    return `${this.baseUrl}/learn/challenges?${params.toString()}`;
   }
 
   /**

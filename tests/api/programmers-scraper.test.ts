@@ -1,201 +1,321 @@
 /**
- * ProgrammersScraper 단위 테스트
+ * ProgrammersScraper 단위 테스트 (fetch mock 기반)
+ *
+ * Puppeteer 의존성 제거 후 프로그래머스 내부 API 호출을 fetch mock으로 검증
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   ProgrammersScraper,
   ProgrammersScrapeError,
 } from '../../src/api/programmers-scraper.js';
-import { BrowserPool } from '../../src/utils/browser-pool.js';
+
+const BASE_URL = 'https://school.programmers.co.kr';
+
+/** 기본 mock API 응답 팩토리 */
+function makeMockApiResponse(overrides: Partial<{
+  page: number;
+  perPage: number;
+  totalPages: number;
+  totalEntries: number;
+  result: object[];
+}> = {}) {
+  return {
+    page: 1,
+    perPage: 20,
+    totalPages: 5,
+    totalEntries: 100,
+    result: [
+      {
+        id: 42748,
+        title: 'K번째수',
+        partTitle: '정렬',
+        level: 1,
+        finishedCount: 50000,
+        acceptanceRate: 70,
+      },
+      {
+        id: 42746,
+        title: '가장 큰 수',
+        partTitle: '정렬',
+        level: 2,
+        finishedCount: 40000,
+        acceptanceRate: 55,
+      },
+    ],
+    ...overrides,
+  };
+}
+
+/** fetch mock 헬퍼 */
+function mockFetchSuccess(data: object) {
+  return vi.spyOn(global, 'fetch').mockResolvedValue({
+    ok: true,
+    status: 200,
+    json: async () => data,
+  } as Response);
+}
 
 describe('ProgrammersScraper', () => {
   let scraper: ProgrammersScraper;
 
   beforeEach(() => {
-    BrowserPool.resetInstance();
     scraper = new ProgrammersScraper();
+    scraper.clearCache();
   });
 
-  afterEach(async () => {
-    await BrowserPool.getInstance().closeAll();
-    BrowserPool.resetInstance();
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   describe('searchProblems', () => {
     it('should search problems with default options', async () => {
+      const mockData = makeMockApiResponse();
+      mockFetchSuccess(mockData);
+
       const problems = await scraper.searchProblems();
 
       expect(problems).toBeDefined();
       expect(Array.isArray(problems)).toBe(true);
+      expect(problems.length).toBe(2);
 
-      if (problems.length > 0) {
-        const firstProblem = problems[0];
-        expect(firstProblem).toHaveProperty('problemId');
-        expect(firstProblem).toHaveProperty('title');
-        expect(firstProblem).toHaveProperty('level');
-        expect(firstProblem).toHaveProperty('category');
-        expect(firstProblem).toHaveProperty('url');
-        expect(typeof firstProblem.problemId).toBe('string');
-        expect(typeof firstProblem.title).toBe('string');
-        expect(typeof firstProblem.level).toBe('number');
-        expect(typeof firstProblem.category).toBe('string');
-        expect(firstProblem.url).toContain('programmers.co.kr');
-      }
-    }, 60000);
+      const first = problems[0];
+      expect(first).toHaveProperty('problemId', '42748');
+      expect(first).toHaveProperty('title', 'K번째수');
+      expect(first).toHaveProperty('level', 1);
+      expect(first).toHaveProperty('category', '정렬');
+      expect(first).toHaveProperty('url');
+      expect(typeof first.problemId).toBe('string');
+      expect(typeof first.title).toBe('string');
+      expect(typeof first.level).toBe('number');
+      expect(typeof first.category).toBe('string');
+      expect(first.url).toContain('programmers.co.kr');
+    });
 
-    it('should filter problems by level', async () => {
+    it('should filter problems by single level', async () => {
+      const mockData = makeMockApiResponse({
+        result: [
+          { id: 42748, title: 'K번째수', partTitle: '정렬', level: 1, finishedCount: 50000, acceptanceRate: 70 },
+        ],
+      });
+      const fetchSpy = mockFetchSuccess(mockData);
+
       const problems = await scraper.searchProblems({ levels: [1] });
 
       expect(problems).toBeDefined();
       expect(Array.isArray(problems)).toBe(true);
 
-      // 프로그래머스는 levels 파라미터가 있어도 다른 레벨도 반환할 수 있음
-      // 최소한 레벨 1 문제가 포함되어 있는지 확인
-      const hasLevel1 = problems.some((problem) => problem.level === 1);
+      // fetch 호출 URL에 levels[] 파라미터가 포함되어야 함
+      const calledUrl = String((fetchSpy.mock.calls[0] as unknown[])[0]);
+      expect(calledUrl).toContain('levels%5B%5D=1');
+
+      const hasLevel1 = problems.some((p) => p.level === 1);
       expect(hasLevel1).toBe(true);
-    }, 60000);
+    });
 
     it('should support multiple levels', async () => {
+      const mockData = makeMockApiResponse();
+      const fetchSpy = mockFetchSuccess(mockData);
+
       const problems = await scraper.searchProblems({ levels: [1, 2] });
 
       expect(problems).toBeDefined();
       expect(Array.isArray(problems)).toBe(true);
 
-      // 프로그래머스는 levels 파라미터가 있어도 필터링이 완벽하지 않음
-      // 최소한 레벨 1 또는 2 문제가 포함되어 있는지 확인
-      const hasTargetLevel = problems.some(
-        (problem) => problem.level === 1 || problem.level === 2
-      );
+      const calledUrl = String((fetchSpy.mock.calls[0] as unknown[])[0]);
+      expect(calledUrl).toContain('levels%5B%5D=1');
+      expect(calledUrl).toContain('levels%5B%5D=2');
+
+      const hasTargetLevel = problems.some((p) => p.level === 1 || p.level === 2);
       expect(hasTargetLevel).toBe(true);
-    }, 60000);
+    });
 
     it('should sort by recent (default)', async () => {
+      const mockData = makeMockApiResponse();
+      const fetchSpy = mockFetchSuccess(mockData);
+
       const problems = await scraper.searchProblems({ order: 'recent' });
 
-      expect(problems).toBeDefined();
       expect(Array.isArray(problems)).toBe(true);
       expect(problems.length).toBeGreaterThan(0);
-    }, 60000);
+
+      const calledUrl = String((fetchSpy.mock.calls[0] as unknown[])[0]);
+      expect(calledUrl).toContain('order=recent');
+    });
 
     it('should sort by accuracy', async () => {
+      const mockData = makeMockApiResponse();
+      const fetchSpy = mockFetchSuccess(mockData);
+
       const problems = await scraper.searchProblems({ order: 'accuracy' });
 
-      expect(problems).toBeDefined();
       expect(Array.isArray(problems)).toBe(true);
       expect(problems.length).toBeGreaterThan(0);
-    }, 60000);
+
+      const calledUrl = String((fetchSpy.mock.calls[0] as unknown[])[0]);
+      expect(calledUrl).toContain('order=accuracy');
+    });
 
     it('should sort by popular', async () => {
+      const mockData = makeMockApiResponse();
+      const fetchSpy = mockFetchSuccess(mockData);
+
       const problems = await scraper.searchProblems({ order: 'popular' });
 
-      expect(problems).toBeDefined();
       expect(Array.isArray(problems)).toBe(true);
       expect(problems.length).toBeGreaterThan(0);
-    }, 60000);
+
+      const calledUrl = String((fetchSpy.mock.calls[0] as unknown[])[0]);
+      expect(calledUrl).toContain('order=popular');
+    });
 
     it('should handle pagination', async () => {
+      const page1Data = makeMockApiResponse({
+        page: 1,
+        result: [
+          { id: 42748, title: 'K번째수', partTitle: '정렬', level: 1, finishedCount: 50000, acceptanceRate: 70 },
+        ],
+      });
+      const page2Data = makeMockApiResponse({
+        page: 2,
+        result: [
+          { id: 42746, title: '가장 큰 수', partTitle: '정렬', level: 2, finishedCount: 40000, acceptanceRate: 55 },
+        ],
+      });
+
+      const fetchSpy = vi
+        .spyOn(global, 'fetch')
+        .mockResolvedValueOnce({ ok: true, status: 200, json: async () => page1Data } as Response)
+        .mockResolvedValueOnce({ ok: true, status: 200, json: async () => page2Data } as Response);
+
       const page1 = await scraper.searchProblems({ page: 1, levels: [1] });
       const page2 = await scraper.searchProblems({ page: 2, levels: [1] });
 
       expect(page1).toBeDefined();
       expect(page2).toBeDefined();
-
-      // 서로 다른 문제들
-      if (page1.length > 0 && page2.length > 0) {
-        expect(page1[0].problemId).not.toBe(page2[0].problemId);
-      }
-    }, 120000);
+      expect(page1[0].problemId).not.toBe(page2[0].problemId);
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+    });
 
     it('should limit results', async () => {
-      const problems = await scraper.searchProblems({ limit: 5 });
+      const mockData = makeMockApiResponse();
+      mockFetchSuccess(mockData);
+
+      const problems = await scraper.searchProblems({ limit: 1 });
 
       expect(problems).toBeDefined();
-      expect(problems.length).toBeLessThanOrEqual(5);
-    }, 60000);
+      expect(problems.length).toBeLessThanOrEqual(1);
+    });
 
     it('should handle empty results', async () => {
-      // 존재하지 않는 검색 조건
+      const emptyData = makeMockApiResponse({ result: [], totalEntries: 0 });
+      mockFetchSuccess(emptyData);
+
       const problems = await scraper.searchProblems({
-        levels: [0], // 레벨 0은 거의 없음
-        page: 999, // 매우 높은 페이지
+        levels: [0],
+        page: 999,
       });
 
       expect(problems).toBeDefined();
       expect(Array.isArray(problems)).toBe(true);
-      // 빈 배열 또는 매우 적은 결과
-    }, 60000);
+      expect(problems.length).toBe(0);
+    });
 
     it('should extract finishedCount and acceptanceRate', async () => {
+      const mockData = makeMockApiResponse({
+        result: [
+          { id: 42748, title: 'K번째수', partTitle: '정렬', level: 1, finishedCount: 50000, acceptanceRate: 70 },
+        ],
+      });
+      mockFetchSuccess(mockData);
+
       const problems = await scraper.searchProblems({ levels: [1] });
 
-      expect(problems).toBeDefined();
-
-      if (problems.length > 0) {
-        const firstProblem = problems[0];
-        expect(firstProblem).toHaveProperty('finishedCount');
-        expect(firstProblem).toHaveProperty('acceptanceRate');
-        expect(typeof firstProblem.finishedCount).toBe('number');
-        expect(typeof firstProblem.acceptanceRate).toBe('number');
-        expect(firstProblem.finishedCount).toBeGreaterThanOrEqual(0);
-        expect(firstProblem.acceptanceRate).toBeGreaterThanOrEqual(0);
-        expect(firstProblem.acceptanceRate).toBeLessThanOrEqual(100);
-      }
-    }, 60000);
+      expect(problems.length).toBeGreaterThan(0);
+      const first = problems[0];
+      expect(first).toHaveProperty('finishedCount', 50000);
+      expect(first).toHaveProperty('acceptanceRate', 70);
+      expect(typeof first.finishedCount).toBe('number');
+      expect(typeof first.acceptanceRate).toBe('number');
+      expect(first.finishedCount).toBeGreaterThanOrEqual(0);
+      expect(first.acceptanceRate).toBeGreaterThanOrEqual(0);
+      expect(first.acceptanceRate).toBeLessThanOrEqual(100);
+    });
 
     it('should extract problem ID from URL', async () => {
+      const mockData = makeMockApiResponse({
+        result: [
+          { id: 42748, title: 'K번째수', partTitle: '정렬', level: 1, finishedCount: 50000, acceptanceRate: 70 },
+        ],
+      });
+      mockFetchSuccess(mockData);
+
       const problems = await scraper.searchProblems({ levels: [1] });
 
-      expect(problems).toBeDefined();
+      expect(problems.length).toBeGreaterThan(0);
+      const first = problems[0];
+      expect(first.problemId).toMatch(/^\d+$/);
+      expect(first.url).toContain(`/lessons/${first.problemId}`);
+    });
 
-      if (problems.length > 0) {
-        const firstProblem = problems[0];
-        expect(firstProblem.problemId).toMatch(/^\d+$/); // 숫자만
-        expect(firstProblem.url).toContain(`/lessons/${firstProblem.problemId}`);
-      }
-    }, 60000);
+    it('should extract category from partTitle', async () => {
+      const mockData = makeMockApiResponse({
+        result: [
+          { id: 42748, title: 'K번째수', partTitle: '연습문제', level: 1, finishedCount: 50000, acceptanceRate: 70 },
+        ],
+      });
+      mockFetchSuccess(mockData);
 
-    it('should extract category', async () => {
       const problems = await scraper.searchProblems({ levels: [1] });
 
-      expect(problems).toBeDefined();
+      expect(problems.length).toBeGreaterThan(0);
+      expect(typeof problems[0].category).toBe('string');
+      expect(problems[0].category).toBe('연습문제');
+    });
 
-      if (problems.length > 0) {
-        const firstProblem = problems[0];
-        expect(typeof firstProblem.category).toBe('string');
-        // 카테고리는 "연습문제", "PCCP 기출문제" 등
-      }
-    }, 60000);
+    it('should build correct URL for problemId', async () => {
+      const mockData = makeMockApiResponse({
+        result: [
+          { id: 42748, title: 'K번째수', partTitle: '정렬', level: 1, finishedCount: 50000, acceptanceRate: 70 },
+        ],
+      });
+      mockFetchSuccess(mockData);
 
-    it('should reuse browser instances', async () => {
-      const pool = BrowserPool.getInstance();
+      const problems = await scraper.searchProblems();
 
-      // 첫 번째 검색
-      await scraper.searchProblems({ levels: [1], limit: 5 });
+      expect(problems[0].url).toBe(`${BASE_URL}/learn/courses/30/lessons/42748`);
+    });
 
-      const status1 = pool.getStatus();
-      expect(status1.total).toBeGreaterThan(0);
+    it('should throw ProgrammersScrapeError on HTTP error', async () => {
+      vi.spyOn(global, 'fetch').mockResolvedValue({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+      } as Response);
 
-      // 두 번째 검색
-      await scraper.searchProblems({ levels: [2], limit: 5 });
+      await expect(scraper.searchProblems()).rejects.toThrow(ProgrammersScrapeError);
+    });
 
-      const status2 = pool.getStatus();
-      // 브라우저가 재사용되므로 total은 증가하지 않음
-      expect(status2.total).toBe(status1.total);
-    }, 120000);
+    it('should throw ProgrammersScrapeError on timeout', async () => {
+      vi.spyOn(global, 'fetch').mockImplementation(() => {
+        return new Promise((_, reject) => {
+          const err = new Error('The operation was aborted');
+          err.name = 'AbortError';
+          setTimeout(() => reject(err), 10);
+        });
+      });
 
-    it('should release browser on error', async () => {
-      const pool = BrowserPool.getInstance();
+      await expect(scraper.searchProblems()).rejects.toThrow(ProgrammersScrapeError);
+    });
 
-      try {
-        // 잘못된 URL로 에러 유발 (실제로는 정상 동작할 수 있음)
-        await scraper.searchProblems({ page: 999999 });
-      } catch (error) {
-        // 에러 발생 가능
-      }
+    it('should include search query in API request', async () => {
+      const mockData = makeMockApiResponse();
+      const fetchSpy = mockFetchSuccess(mockData);
 
-      // 브라우저가 release 되었는지 확인
-      const status = pool.getStatus();
-      expect(status.active).toBe(status.total); // 모든 브라우저가 사용 가능 상태
-    }, 60000);
+      await scraper.searchProblems({ query: '해시' });
+
+      const calledUrl = String((fetchSpy.mock.calls[0] as unknown[])[0]);
+      expect(calledUrl).toContain('search=');
+      expect(decodeURIComponent(calledUrl)).toContain('search=해시');
+    });
   });
 });
