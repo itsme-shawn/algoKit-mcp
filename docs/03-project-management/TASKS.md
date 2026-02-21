@@ -1,6 +1,6 @@
 # AlgoKit 개발 태스크 현황
 
-**마지막 업데이트**: 2026-02-15
+**마지막 업데이트**: 2026-02-21
 **전체 진행률**: 95% (40/41 태스크 완료)
 
 ---
@@ -15,7 +15,7 @@
 | Phase 5: 프롬프트 아키텍처 | ✅ | 100% (8/8) | 2026-02-14 | 힌트 가이드, 프롬프트 시스템 (-69% 코드) |
 | Phase 6: BOJ 스크래핑 | ✅ | 100% (8/8) | 2026-02-14 | fetch_problem_content, analyze_code_submission |
 | Phase 4: 완성도 & 최적화 | 🚧 | 75% (3/4) | - | Rate Limiting, LRU 캐싱 |
-| Phase 7: 프로그래머스 | ✅ | 100% (8/8) | 2026-02-15 | 검색, 상세 조회, 캐싱, 테스트 (Puppeteer + cheerio) |
+| Phase 7: 프로그래머스 | ✅ | 100% (8/8) | 2026-02-15 | 검색, 상세 조회, 캐싱, 테스트 (내부 API + cheerio) |
 | **전체** | **🚧** | **95% (40/41)** | - | **10개 MCP 도구** |
 
 ---
@@ -157,29 +157,28 @@
 
 ### Phase 7: 프로그래머스 통합 ✅ (100% 완료)
 
-**아키텍처**: 하이브리드 (검색: Puppeteer, 문제 상세: cheerio)
+**아키텍처**: 검색: 내부 JSON API, 문제 상세: cheerio
 
 | ID | 태스크 | 상태 | 완료일 | 산출물 |
 |----|--------|------|--------|--------|
-| 7.1 | BrowserPool 구현 | ✅ | 2026-02-15 | browser-pool.ts (13개 테스트 통과) |
-| 7.2 | 검색 기능 (Puppeteer) | ✅ | 2026-02-15 | search-programmers-problems.ts |
+| 7.1 | ~~BrowserPool 구현~~ | ❌ 제거됨 | - | Puppeteer 제거로 불필요 |
+| 7.2 | 검색 기능 (내부 JSON API) | ✅ | 2026-02-21 | search-problems-programmers.ts |
 | 7.3 | 상세 조회 (cheerio) | ✅ | 2026-02-15 | programmers-scraper.ts |
 | 7.4 | HTML 파서 확장 | ✅ | 2026-02-15 | html-parser.ts (parseProgrammersProblemContent) |
 | 7.5 | MCP 도구 구현 | ✅ | 2026-02-15 | get-programmers-problem.ts (194줄) |
 | 7.6 | Rate Limiting & 캐싱 | ✅ | 2026-02-15 | LRU Cache 통합 (boj-scraper, programmers-scraper) |
-| 7.7 | 테스트 확장 | ✅ | 2026-02-15 | 캐싱 테스트 15개 추가, 총 491개 테스트 통과 |
-| 7.8 | 문서 업데이트 | ✅ | 2026-02-15 | TOOLS.md, README.md |
+| 7.7 | 테스트 확장 | ✅ | 2026-02-21 | fetch mock 기반 재작성, browser-pool.test.ts 삭제 |
+| 7.8 | 문서 업데이트 | ✅ | 2026-02-21 | TOOLS.md, ARCHITECTURE.md, CLAUDE.md |
 
-#### Task 7.1: BrowserPool 구현 ✅
-- **완료일**: 2026-02-15
-- **산출물**: `browser-pool.ts` (13개 테스트 통과)
-- **해결**: Unhandled rejection 타이밍 이슈 수정
-- **기능**: 브라우저 인스턴스 풀링, 재시작 임계값, 타임아웃 처리
+#### ~~Task 7.1: BrowserPool 구현~~ (제거됨)
+- **이유**: Puppeteer 제거 (`feat/remove-puppeteer` 브랜치)
+- **삭제 파일**: `src/utils/browser-pool.ts`, `tests/utils/browser-pool.test.ts`
 
-#### Task 7.2: 검색 기능 ✅
-- **방식**: Puppeteer 기반 (SPA 대응)
-- **산출물**: `search-programmers-problems.ts` (194줄)
-- **성능**: 3-5초 (최초), <100ms (캐시)
+#### Task 7.2: 검색 기능 ✅ (재구현)
+- **방식**: 프로그래머스 내부 JSON API (`GET /api/v2/school/challenges/`)
+- **산출물**: `search-problems-programmers.ts` (파일명 네이밍 컨벤션 통일)
+- **성능**: < 1초 (최초), < 100ms (캐시)
+- **이전**: Puppeteer 기반 3-5초 → **현재**: fetch 기반 < 1초
 
 #### Task 7.3: 상세 조회 ✅
 - **방식**: fetch + cheerio (SSR)
@@ -287,4 +286,4 @@
 **노트**:
 - 백업 파일: `tasks-backup-20260215.md` (1,449줄 원본)
 - Phase 5는 Phase 3을 개선하여 Phase 4.1을 불필요하게 만듦
-- Phase 7은 Puppeteer + cheerio 하이브리드 아키텍처 사용
+- Phase 7은 내부 JSON API + cheerio 아키텍처 사용 (Puppeteer 제거 완료)

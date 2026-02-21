@@ -58,7 +58,7 @@ import {
 import {
   searchProgrammersProblemsTool,
   SearchProgrammersProblemsInputSchema,
-} from './tools/search-programmers-problems.js';
+} from './tools/search-problems-programmers.js';
 import {
   getProgrammersProblemTool,
   GetProgrammersProblemInputSchema,

@@ -1,6 +1,6 @@
 {
   "name": "algokit-mcp",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
@@ -45,14 +45,12 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.26.0",
     "cheerio": "^1.2.0",
-    "puppeteer": "^24.37.3",
     "zod": "3.25.76",
     "zod-to-json-schema": "^3.25.1"
   },
   "devDependencies": {
     "@types/cheerio": "^0.22.35",
     "@types/node": "^25.2.3",
-    "@types/puppeteer": "^5.4.7",
     "@vitest/coverage-v8": "^4.0.18",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
