@@ -5,9 +5,9 @@
  */
 
 import { z } from 'zod';
-import type { CodeAnalysisResult, SupportedLanguage, AnalysisType } from '../types/problem-content.js';
+import type { CodeAnalysisResult, SupportedLanguage, AnalysisType } from '../../types/problem-content.js';
 import { handleFetchProblemContentBOJ } from './fetch-problem-content-boj.js';
-import { CodeAnalyzer } from '../services/code-analyzer.js';
+import { CodeAnalyzer } from '../../services/code-analyzer.js';
 
 /**
  * 입력 스키마

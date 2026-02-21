@@ -5,9 +5,9 @@
  */
 
 import { z } from 'zod';
-import type { ProgrammersReviewTemplateGenerator } from '../services/programmers-review-template-generator.js';
-import { ProgrammersScrapeError } from '../api/programmers-scraper.js';
-import { parseProgrammersUrl } from '../utils/url-parser.js';
+import type { ProgrammersReviewTemplateGenerator } from '../../services/programmers-review-template-generator.js';
+import { ProgrammersScrapeError } from '../../api/programmers-scraper.js';
+import { parseProgrammersUrl } from '../../utils/url-parser.js';
 
 /**
  * 입력 스키마

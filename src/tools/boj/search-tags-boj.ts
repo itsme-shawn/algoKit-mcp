@@ -5,8 +5,8 @@
  */
 
 import { z } from 'zod';
-import { SolvedAcClient } from '../api/solvedac-client.js';
-import { Tag } from '../api/types.js';
+import { SolvedAcClient } from '../../api/solvedac-client.js';
+import { Tag } from '../../api/types.js';
 
 /**
  * 입력 스키마

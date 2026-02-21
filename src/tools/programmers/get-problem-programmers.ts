@@ -5,9 +5,9 @@
  */
 
 import { z } from 'zod';
-import type { ProgrammersProblemDetail } from '../types/programmers.js';
-import { ProgrammersScraper, ProgrammersScrapeError } from '../api/programmers-scraper.js';
-import { parseProgrammersUrl } from '../utils/url-parser.js';
+import type { ProgrammersProblemDetail } from '../../types/programmers.js';
+import { ProgrammersScraper, ProgrammersScrapeError } from '../../api/programmers-scraper.js';
+import { parseProgrammersUrl } from '../../utils/url-parser.js';
 
 /**
  * 입력 스키마 (URL 또는 숫자 모두 지원)

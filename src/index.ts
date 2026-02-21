@@ -18,73 +18,69 @@ import { readFile } from 'fs/promises';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
-// 도구 임포트
+// BOJ 도구
 import {
   searchProblems,
   SearchProblemsInputSchema,
-} from './tools/search-problems.js';
+} from './tools/boj/search-problems-boj.js';
 import {
   getProblem,
   GetProblemInputSchema,
-} from './tools/get-problem.js';
+} from './tools/boj/get-problem-boj.js';
 import {
   searchTags,
   SearchTagsInputSchema,
-} from './tools/search-tags.js';
-
-// BOJ 도구
+} from './tools/boj/search-tags-boj.js';
 import {
   analyzeProblemBOJTool,
   AnalyzeProblemBOJInputSchema,
-} from './tools/analyze-problem-boj.js';
+} from './tools/boj/analyze-problem-boj.js';
 import {
   generateReviewTemplateBOJTool,
   GenerateReviewTemplateBOJInputSchema,
-} from './tools/generate-review-template-boj.js';
+} from './tools/boj/generate-review-template-boj.js';
 import {
   generateHintBOJTool,
   GenerateHintBOJInputSchema,
-} from './tools/generate-hint-boj.js';
+} from './tools/boj/generate-hint-boj.js';
 import {
   fetchProblemContentBOJTool,
   FetchProblemContentBOJInputSchema,
-} from './tools/fetch-problem-content-boj.js';
+} from './tools/boj/fetch-problem-content-boj.js';
 import {
   analyzeCodeSubmissionBOJTool,
   AnalyzeCodeSubmissionBOJInputSchema,
-} from './tools/analyze-code-submission-boj.js';
+} from './tools/boj/analyze-code-submission-boj.js';
 
 // Programmers 도구
 import {
   searchProgrammersProblemsTool,
   SearchProgrammersProblemsInputSchema,
-} from './tools/search-programmers-problems.js';
+} from './tools/programmers/search-problems-programmers.js';
 import {
   getProgrammersProblemTool,
   GetProgrammersProblemInputSchema,
-} from './tools/get-programmers-problem.js';
-
-// Programmers 학습 도구
+} from './tools/programmers/get-problem-programmers.js';
 import {
   analyzeProblemProgrammersTool,
   AnalyzeProblemProgrammersInputSchema,
-} from './tools/analyze-problem-programmers.js';
+} from './tools/programmers/analyze-problem-programmers.js';
 import {
   generateHintProgrammersTool,
   GenerateHintProgrammersInputSchema,
-} from './tools/generate-hint-programmers.js';
+} from './tools/programmers/generate-hint-programmers.js';
 import {
   generateReviewTemplateProgrammersTool,
   GenerateReviewTemplateProgrammersInputSchema,
-} from './tools/generate-review-template-programmers.js';
+} from './tools/programmers/generate-review-template-programmers.js';
 import {
   analyzeCodeSubmissionProgrammersTool,
   AnalyzeCodeSubmissionProgrammersInputSchema,
-} from './tools/analyze-code-submission-programmers.js';
+} from './tools/programmers/analyze-code-submission-programmers.js';
 import {
   fetchProblemContentProgrammersTool,
   FetchProblemContentProgrammersInputSchema,
-} from './tools/fetch-problem-content-programmers.js';
+} from './tools/programmers/fetch-problem-content-programmers.js';
 
 // 서비스 임포트
 import { SolvedAcClient } from './api/solvedac-client.js';

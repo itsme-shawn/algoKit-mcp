@@ -5,9 +5,9 @@
  */
 
 import { z } from 'zod';
-import { SolvedAcClient } from '../api/solvedac-client.js';
-import { Problem, ProblemNotFoundError } from '../api/types.js';
-import { getTierBadge, levelToTier } from '../utils/tier-converter.js';
+import { SolvedAcClient } from '../../api/solvedac-client.js';
+import { Problem, ProblemNotFoundError } from '../../api/types.js';
+import { getTierBadge, levelToTier } from '../../utils/tier-converter.js';
 
 /**
  * 입력 스키마

@@ -5,8 +5,8 @@
  */
 
 import { z } from 'zod';
-import type { ProblemAnalyzer } from '../services/problem-analyzer.js';
-import { ProblemNotFoundError } from '../api/types.js';
+import type { ProblemAnalyzer } from '../../services/problem-analyzer.js';
+import { ProblemNotFoundError } from '../../api/types.js';
 
 /**
  * 입력 스키마

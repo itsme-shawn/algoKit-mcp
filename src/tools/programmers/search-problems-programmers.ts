@@ -5,8 +5,8 @@
  */
 
 import { z } from 'zod';
-import { ProgrammersScraper } from '../api/programmers-scraper.js';
-import type { ProgrammersSearchOptions, ProgrammersProblemSummary } from '../types/programmers.js';
+import { ProgrammersScraper } from '../../api/programmers-scraper.js';
+import type { ProgrammersSearchOptions, ProgrammersProblemSummary } from '../../types/programmers.js';
 
 /**
  * 입력 스키마

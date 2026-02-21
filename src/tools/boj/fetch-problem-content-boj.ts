@@ -5,9 +5,9 @@
  */
 
 import { z } from 'zod';
-import type { ProblemContent } from '../types/problem-content.js';
-import { BOJScraper, BojFetchError } from '../api/boj-scraper.js';
-import { parseProblemContent, HtmlParseError } from '../utils/html-parser.js';
+import type { ProblemContent } from '../../types/problem-content.js';
+import { BOJScraper, BojFetchError } from '../../api/boj-scraper.js';
+import { parseProblemContent, HtmlParseError } from '../../utils/html-parser.js';
 
 /**
  * 입력 스키마

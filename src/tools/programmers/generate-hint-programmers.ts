@@ -5,9 +5,9 @@
  */
 
 import { z } from 'zod';
-import type { ProgrammersProblemAnalyzer } from '../services/programmers-problem-analyzer.js';
-import { ProgrammersScrapeError } from '../api/programmers-scraper.js';
-import { parseProgrammersUrl } from '../utils/url-parser.js';
+import type { ProgrammersProblemAnalyzer } from '../../services/programmers-problem-analyzer.js';
+import { ProgrammersScrapeError } from '../../api/programmers-scraper.js';
+import { parseProgrammersUrl } from '../../utils/url-parser.js';
 
 /**
  * 입력 스키마

@@ -5,8 +5,8 @@
  */
 
 import { z } from 'zod';
-import type { ReviewTemplateGenerator } from '../services/review-template-generator.js';
-import { ProblemNotFoundError } from '../api/types.js';
+import type { ReviewTemplateGenerator } from '../../services/review-template-generator.js';
+import { ProblemNotFoundError } from '../../api/types.js';
 
 /**
  * 입력 스키마

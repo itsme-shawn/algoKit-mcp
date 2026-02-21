@@ -5,10 +5,10 @@
  */
 
 import { z } from 'zod';
-import type { ProgrammersScraper } from '../api/programmers-scraper.js';
-import { ProgrammersScrapeError } from '../api/programmers-scraper.js';
-import { parseProgrammersUrl } from '../utils/url-parser.js';
-import { programmersToProblemContent } from '../utils/programmers-converter.js';
+import type { ProgrammersScraper } from '../../api/programmers-scraper.js';
+import { ProgrammersScrapeError } from '../../api/programmers-scraper.js';
+import { parseProgrammersUrl } from '../../utils/url-parser.js';
+import { programmersToProblemContent } from '../../utils/programmers-converter.js';
 
 /**
  * 입력 스키마
