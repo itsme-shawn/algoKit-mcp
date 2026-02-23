@@ -14,11 +14,14 @@ const __dirname = dirname(__filename);
  * - 로컬 설정 디렉토리가 cwd에 있으면 → 로컬 스킬 경로
  * - 전역 홈 디렉토리가 있으면 → 전역 스킬 경로
  *
- * | 플랫폼      | 로컬 감지 기준    | 로컬 스킬 경로          | 전역 스킬 경로          |
- * |------------|-----------------|----------------------|----------------------|
- * | Claude Code | .mcp.json       | .claude/skills/      | ~/.claude/skills/    |
- * | Codex CLI   | .codex/         | .codex/skills/       | ~/.codex/skills/     |
- * | Gemini CLI  | .gemini/        | .gemini/skills/      | ~/.gemini/skills/    |
+ * | 플랫폼      | 로컬 감지 기준         | 로컬 스킬 경로          | 전역 스킬 경로          |
+ * |------------|---------------------|----------------------|----------------------|
+ * | Claude Code | .mcp.json           | .claude/skills/      | ~/.claude/skills/    |
+ * | Codex CLI   | .codex/             | .codex/skills/       | ~/.codex/skills/     |
+ * | Gemini CLI  | .gemini/            | .gemini/skills/      | ~/.gemini/skills/    |
+ *
+ * Codex 참고: 프로젝트 Skills 표준 경로는 .agents/skills/ (cwd → repo root 스캔)
+ * Gemini 참고: .agents/skills/도 alias로 지원하나 .gemini/skills/ 권장
  */
 const PLATFORMS = [
   {
