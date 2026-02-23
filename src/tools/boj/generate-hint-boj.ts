@@ -62,7 +62,9 @@ export function generateHintBOJTool(analyzer: ProblemAnalyzer) {
    - 예: mcp-cli call algokit/fetch_problem_content '{"problem_id": 1234}'
    - 본문 확인은 권장사항이며 필수는 아님
 
-**정답 정책**: 힌트만 기본 제공. 사용자가 "정답", "풀이", "코드" 명시 요청 시만 전체 풀이 제공.`,
+**정답 정책**: 힌트만 기본 제공. 사용자가 "정답", "풀이", "코드" 명시 요청 시만 전체 풀이 제공.
+
+⚠️ 플랫폼 판별: 문제 번호만 입력된 경우 대화 맥락에서 플랫폼을 파악하거나, 맥락이 없으면 반드시 BOJ/프로그래머스 중 어느 플랫폼인지 사용자에게 확인 후 호출하세요.`,
     inputSchema: GenerateHintBOJInputSchema,
     handler: async (input: GenerateHintBOJInput): Promise<TextContent> => {
       try {

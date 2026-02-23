@@ -34,7 +34,7 @@ interface TextContent {
 export function generateReviewTemplateBOJTool(generator: ReviewTemplateGenerator) {
   return {
     name: 'generate_review_template_boj',
-    description: '백준(BOJ) 문제에 대한 사용자의 제출 코드와 문제 본문을 분석해서 사용자 맞춤형 복기용 가이드를 제공합니다. 마크다운 템플릿, 문제 분석, 관련 문제, 작성 프롬프트를 포함합니다.',
+    description: '백준(BOJ) 문제에 대한 사용자의 제출 코드와 문제 본문을 분석해서 사용자 맞춤형 복기용 가이드를 제공합니다. 마크다운 템플릿, 문제 분석, 관련 문제, 작성 프롬프트를 포함합니다.\n\n⚠️ 플랫폼 판별: 문제 번호만 입력된 경우 대화 맥락에서 플랫폼을 파악하거나, 맥락이 없으면 반드시 BOJ/프로그래머스 중 어느 플랫폼인지 사용자에게 확인 후 호출하세요.',
     inputSchema: GenerateReviewTemplateBOJInputSchema,
     handler: async (input: GenerateReviewTemplateBOJInput): Promise<TextContent> => {
       try {

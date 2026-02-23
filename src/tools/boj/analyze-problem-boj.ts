@@ -34,7 +34,7 @@ interface TextContent {
 export function analyzeProblemBOJTool(analyzer: ProblemAnalyzer) {
   return {
     name: 'analyze_problem_boj',
-    description: '백준(BOJ) 문제를 분석하여 구조화된 힌트 데이터를 제공합니다. 알고리즘 패턴, 난이도 컨텍스트, 3단계 힌트 포인트, 유사 문제 추천을 포함합니다.',
+    description: '백준(BOJ) 문제를 분석하여 구조화된 힌트 데이터를 제공합니다. 알고리즘 패턴, 난이도 컨텍스트, 3단계 힌트 포인트, 유사 문제 추천을 포함합니다.\n\n⚠️ 플랫폼 판별: 문제 번호만 입력된 경우 대화 맥락에서 플랫폼을 파악하거나, 맥락이 없으면 반드시 BOJ/프로그래머스 중 어느 플랫폼인지 사용자에게 확인 후 호출하세요.',
     inputSchema: AnalyzeProblemBOJInputSchema,
     handler: async (input: AnalyzeProblemBOJInput): Promise<TextContent> => {
       try {

@@ -60,7 +60,9 @@ export function generateHintProgrammersTool(analyzer: ProgrammersProblemAnalyzer
    - 난이도 높은 문제(Lv. 3 이상)는 메타데이터만으로 부족할 수 있음
    - fetch_problem_content_programmers로 실제 문제 본문 확인 후 힌트 생성 권장
 
-**정답 정책**: 힌트만 기본 제공. 사용자가 "정답", "풀이", "코드" 명시 요청 시만 전체 풀이 제공.`,
+**정답 정책**: 힌트만 기본 제공. 사용자가 "정답", "풀이", "코드" 명시 요청 시만 전체 풀이 제공.
+
+⚠️ 플랫폼 판별: 문제 번호만 입력된 경우 대화 맥락에서 플랫폼을 파악하거나, 맥락이 없으면 반드시 BOJ/프로그래머스 중 어느 플랫폼인지 사용자에게 확인 후 호출하세요.`,
     inputSchema: GenerateHintProgrammersInputSchema,
     handler: async (input: GenerateHintProgrammersInput): Promise<TextContent> => {
       try {

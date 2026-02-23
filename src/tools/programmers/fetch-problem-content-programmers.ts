@@ -88,7 +88,9 @@ export function fetchProblemContentProgrammersTool(scraper: ProgrammersScraper) 
 - 스크래핑 대상: https://school.programmers.co.kr/learn/courses/30/lessons/{problem_id}
 - 타임아웃: 10초
 - 재시도: 최대 2회
-- 캐시: 30일`,
+- 캐시: 30일
+
+⚠️ 플랫폼 판별: 문제 번호만 입력된 경우 대화 맥락에서 플랫폼을 파악하거나, 맥락이 없으면 반드시 BOJ/프로그래머스 중 어느 플랫폼인지 사용자에게 확인 후 호출하세요.`,
     inputSchema: FetchProblemContentProgrammersInputSchema,
     handler: (input: FetchProblemContentProgrammersInput) =>
       handleFetchProblemContentProgrammers(input, scraper),
