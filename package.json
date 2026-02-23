@@ -26,7 +26,8 @@
     "study-helper"
   ],
   "files": [
-    "dist"
+    "dist",
+    "skills"
   ],
   "author": "itsme-shawn <chs98105@gmail.com>",
   "license": "MIT",

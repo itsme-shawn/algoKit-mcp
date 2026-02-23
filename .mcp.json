@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "algokit": {
-      "command": "node",
-      "args": ["/Users/shawn/dev/projects/cote-mcp-server/dist/index.js"]
-    }
-  }
-}
