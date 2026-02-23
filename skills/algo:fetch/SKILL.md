@@ -1,129 +1,97 @@
-# algo:fetch - 백준 문제 본문 크롤링
+# algo:fetch - 알고리즘 문제 본문 크롤링
 
-백준 온라인 저지(BOJ) 웹페이지에서 문제 전문을 크롤링하는 스킬입니다.
+백준(BOJ)과 프로그래머스 문제의 전문을 가져오는 스킬입니다.
 
 ## 사용법
 
 ```
-/algo:fetch <문제번호>
+/algo:fetch <문제식별자>
 ```
 
 **예시:**
-- `/algo:fetch 1003` - 피보나치 함수 문제 본문 가져오기
-- `/algo:fetch 11729` - 하노이 탑 문제 본문 가져오기
+- `/algo:fetch 1003` - 숫자만 입력 → 플랫폼 질문
+- `/algo:fetch https://www.acmicpc.net/problem/1003` - URL → BOJ 확정
+- `/algo:fetch https://school.programmers.co.kr/learn/courses/30/lessons/42748` - URL → 프로그래머스 확정
+
+## 플랫폼 판별 규칙
+
+| 입력 패턴 | 플랫폼 | 예시 |
+|-----------|--------|------|
+| `acmicpc.net` URL | BOJ | `https://www.acmicpc.net/problem/1003` |
+| `school.programmers.co.kr` URL | Programmers | `https://school.programmers.co.kr/...` |
+| **숫자만 입력** | **→ 반드시 되묻기** | `1003`, `42748` |
+
+단, **대화 맥락에서 플랫폼이 이미 확인된 경우** (예: "백준 1003번 풀고 있어")에는 되묻지 않고 그 플랫폼으로 진행합니다.
+
+> ⚠️ **맥락이 없는 숫자 입력은 절대 임의로 플랫폼을 추정하지 않습니다.**
 
 ## 동작 방식
 
-1. **MCP 도구 호출**: `algokit/fetch_problem_content` 사용
-2. **BOJ 크롤링**: https://www.acmicpc.net/problem/{ID}에서 HTML 파싱
+1. **플랫폼 판별**: 위 규칙 적용 → 불명확하면 즉시 되묻기
+2. **MCP 도구 호출**: 플랫폼별 `fetch_problem_content_*` 실행
 3. **구조화된 데이터 반환**:
    - 문제 제목, 설명
    - 입출력 형식
    - 예제 입출력
-   - 시간/메모리 제한
+   - 시간/메모리 제한 (BOJ) 또는 제한사항 (Programmers)
    - 메타데이터
 
 ## MCP 도구 사용
 
-반드시 다음 순서로 실행:
+### BOJ
 
-```bash
-# 1. 스키마 확인 (필수)
-mcp-cli info algokit/fetch_problem_content
-
-# 2. 문제 본문 크롤링
-mcp-cli call algokit/fetch_problem_content '{"problem_id": 1003}'
+```
+algokit/fetch_problem_content_boj { problem_id: 1003 }
 ```
 
-## 응답 예시
+크롤링 대상: `https://www.acmicpc.net/problem/{ID}`
 
-```json
-{
-  "problemId": 1003,
-  "title": "피보나치 함수",
-  "description": "다음 소스는 N번째 피보나치 수를 구하는 C++ 함수이다...",
-  "inputFormat": "첫째 줄에 테스트 케이스의 개수 T가 주어진다...",
-  "outputFormat": "각 테스트 케이스마다 0이 출력되는 횟수와...",
-  "examples": [
-    {
-      "input": "3\n0\n1\n3",
-      "output": "1 0\n0 1\n1 2"
-    }
-  ],
-  "limits": {
-    "timeLimit": "0.25초 (추가 시간 없음)",
-    "memoryLimit": "128 MB"
-  },
-  "metadata": {
-    "fetchedAt": "2026-02-15T00:00:00.000Z",
-    "sourceUrl": "https://www.acmicpc.net/problem/1003"
-  }
+### 프로그래머스
+
+```
+# 숫자 ID로
+algokit/fetch_problem_content_programmers { problem_id: 42748 }
+
+# URL로
+algokit/fetch_problem_content_programmers {
+  problem_id: "https://school.programmers.co.kr/learn/courses/30/lessons/42748"
 }
 ```
 
-## 사용 시나리오
-
-### 1. 문제 풀이 전 문제 확인
-```
-사용자: 1003번 문제가 뭐야?
-AI: /algo:fetch 1003 실행 → 문제 설명 요약
-```
-
-### 2. 문제 복습 시 내용 참조
-```
-사용자: 이 문제 다시 풀어보려고 하는데
-AI: /algo:fetch 실행 → 입출력 예제 제시
-```
-
-### 3. 코드 분석 시 요구사항 비교
-```
-/algo:fetch로 문제 요구사항 확인
-→ /algo:code-review로 코드가 요구사항 충족하는지 검증
-```
-
-### 4. 예제 입출력 확인
-```
-사용자: 예제 입력이 뭐였더라?
-AI: /algo:fetch 실행 → examples 섹션 제공
-```
+크롤링 대상: `https://school.programmers.co.kr/learn/courses/30/lessons/{ID}`
 
 ## 크롤링 제한사항
 
-| 항목 | 설정 |
-|------|------|
-| 타임아웃 | 10초 |
-| 재시도 | 최대 2회 |
-| 캐시 | 30일 (Phase 6-3 예정) |
-| 대상 URL | https://www.acmicpc.net/problem/{ID} |
+| 항목 | BOJ | Programmers |
+|------|-----|-------------|
+| 타임아웃 | 10초 | 10초 |
+| 재시도 | 최대 2회 | 최대 2회 |
+| 캐시 | 30일 | 30일 |
 
 ## 에러 처리
 
-| 에러 타입 | 원인 | 해결 방법 |
-|-----------|------|-----------|
-| NOT_FOUND | 문제 번호가 존재하지 않음 | 문제 번호 확인 |
-| TIMEOUT | 10초 내 응답 없음 | 재시도 또는 네트워크 확인 |
-| NETWORK_ERROR | 네트워크 연결 실패 | 인터넷 연결 확인 |
+| 에러 | 원인 | 해결 |
+|------|------|------|
+| NOT_FOUND | 문제 번호가 없음 | 번호/URL 확인 |
+| TIMEOUT | 10초 초과 | 재시도 |
 | PARSE_ERROR | HTML 구조 변경 | 이슈 리포트 |
+
+## 사용 시나리오
+
+1. **문제 풀이 전 확인**: 입출력 예제, 제한 조건 파악
+2. **문제 복습 시 참조**: 요구사항 재확인
+3. **코드 분석 시 비교**: `/algo:code-review`와 연계
 
 ## 주의사항
 
-- ✅ 문제 본문이 필요할 때만 사용 (API 부하 최소화)
-- ✅ 크롤링 결과는 구조화된 JSON으로 제공
-- ✅ 예제 입출력은 배열로 제공 (여러 개 가능)
-- ⚠️ BOJ 웹사이트 HTML 구조 변경 시 파싱 실패 가능
+- ✅ 숫자만 입력된 경우 플랫폼 확인 후 진행
+- ✅ 대화 맥락에서 플랫폼이 이미 확인된 경우 그 맥락 활용
+- ✅ 문제 본문 필요 시에만 사용 (서버 부하 최소화)
+- ❌ 맥락 없이 플랫폼 임의 추정 금지
+- ⚠️ 웹사이트 HTML 구조 변경 시 파싱 실패 가능
 
-## 연계 스킬
+## 관련 스킬
 
-- `/algo:hint` - 문제 힌트 생성
-- `/algo:code-review` - 코드 분석 (문제 본문과 비교)
+- `/algo:hint` - 문제 힌트 생성 (내부적으로 fetch 활용)
+- `/algo:code-review` - 코드와 문제 요구사항 비교 분석
 - `/algo:review` - 복습 템플릿 생성
-
-## Phase 6 기능
-
-이 스킬은 **Phase 6** 기능으로 구현 예정입니다:
-- P6-002: BOJ 페이지 크롤러 구현
-- P6-003: HTML 파서 구현
-- P6-004: fetch_problem_content MCP 도구 구현
-- P6-005: 캐싱 레이어 추가 (30일)
-
-현재 상태: **개발 중** (index.ts에 미등록)
