@@ -1,6 +1,9 @@
 {
-  "name": "algokit-mcp",
-  "version": "1.0.3",
+  "name": "@itsme-shawn/algokit-mcp",
+  "publishConfig": {
+    "access": "public"
+  },
+  "version": "1.0.4",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
