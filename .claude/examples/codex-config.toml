@@ -3,4 +3,4 @@
 
 [mcp.servers.algokit]
 command = "npx"
-args = ["-y", "algokit-mcp"]
+args = ["-y", "@itsme-shawn/algokit-mcp@latest"]
