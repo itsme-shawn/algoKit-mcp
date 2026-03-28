@@ -17,7 +17,6 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
 import { readFile } from 'fs/promises';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { ensureSkillsInstalled } from './utils/agent-skill-installer.js';
 
 // BOJ 도구
 import {
@@ -691,8 +690,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
  * 서버 시작
  */
 async function main() {
-  await ensureSkillsInstalled();
-
   const transport = new StdioServerTransport();
   await server.connect(transport);
 

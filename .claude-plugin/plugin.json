@@ -1,0 +1,20 @@
+{
+  "name": "algokit",
+  "description": "AI-powered algorithm learning toolkit for BOJ and Programmers (백준/프로그래머스 알고리즘 학습 MCP 툴킷)",
+  "version": "1.0.4",
+  "author": {
+    "name": "itsme-shawn",
+    "email": "chs98105@gmail.com"
+  },
+  "homepage": "https://github.com/itsme-shawn/AlgoKit-mcp",
+  "repository": "https://github.com/itsme-shawn/AlgoKit-mcp",
+  "license": "MIT",
+  "keywords": [
+    "algorithm",
+    "boj",
+    "programmers",
+    "mcp",
+    "coding-test",
+    "study-helper"
+  ]
+}

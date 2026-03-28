@@ -1,0 +1,17 @@
+{
+  "name": "algokit-marketplace",
+  "description": "AlgoKit MCP plugin marketplace",
+  "owner": {
+    "name": "itsme-shawn",
+    "email": "chs98105@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "algokit",
+      "description": "AI-powered algorithm learning toolkit for BOJ and Programmers",
+      "version": "1.0.4",
+      "source": "./",
+      "strict": false
+    }
+  ]
+}
