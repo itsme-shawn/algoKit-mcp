@@ -79,6 +79,17 @@ export default function Hero() {
             </svg>
             GitHub
           </a>
+          <a
+            href="https://www.npmjs.com/package/algokit-mcp"
+            target="_blank"
+            rel="noopener"
+            className="inline-flex items-center gap-1.5 font-mono text-[13px] text-text-secondary px-5 py-2.5 border border-border-medium rounded-sm hover:border-text-muted hover:text-text-primary hover:no-underline transition-[border-color,color] duration-200"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M0 0v16h16V0H0zm9.6 12.8H8V6.4H6.4v6.4H1.6V3.2h8v9.6zm4.8 0h-3.2V3.2h3.2v9.6z" />
+            </svg>
+            npm
+          </a>
         </div>
 
         {/* Supported platforms */}
