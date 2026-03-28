@@ -7,8 +7,8 @@
   },
   "plugins": [
     {
-      "name": "algokit",
-      "description": "AI-powered algorithm learning toolkit for BOJ and Programmers",
+      "name": "algokit-mcp",
+      "description": "AI-powered algorithm learning MCP toolkit for BOJ and Programmers",
       "version": "1.0.4",
       "source": "./",
       "strict": false
