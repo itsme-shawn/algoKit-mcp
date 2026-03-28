@@ -16,5 +16,12 @@
     "mcp",
     "coding-test",
     "study-helper"
-  ]
+  ],
+  "skills": "./skills/",
+  "mcpServers": {
+    "algokit": {
+      "command": "npx",
+      "args": ["-y", "algokit-mcp@latest"]
+    }
+  }
 }
