@@ -2,6 +2,8 @@
 
 **AI 에이전트와 함께하는 알고리즘 학습 MCP 툴킷 (백준, 프로그래머스 지원)**
 
+**[Landing Page](https://algokit-mcp.vercel.app/)** | **[NPM](https://www.npmjs.com/package/algokit-mcp)** | **[GitHub](https://github.com/itsme-shawn/AlgoKit-mcp)**
+
 AI 기반 힌트 생성, 문제 분석, 복습 템플릿 제공으로 효율적인 알고리즘 학습을 지원합니다.
 
 ## 주요 기능
@@ -759,7 +761,7 @@ MIT
 
 <div align="center">
 
-**[GitHub](https://github.com/itsme-shawn/AlgoKit-mcp)** • **[Issues](https://github.com/itsme-shawn/algoKit-mcp/issues)** • **[NPM](https://www.npmjs.com/package/algokit-mcp)**
+**[Landing Page](https://algokit-mcp.vercel.app/)** • **[GitHub](https://github.com/itsme-shawn/AlgoKit-mcp)** • **[Issues](https://github.com/itsme-shawn/algoKit-mcp/issues)** • **[NPM](https://www.npmjs.com/package/algokit-mcp)**
 
 
 </div>
