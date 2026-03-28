@@ -1,0 +1,149 @@
+@import "tailwindcss";
+
+/* ─── Theme tokens via CSS variables ─── */
+@layer base {
+  :root {
+    --bg-primary: #faf9f7;
+    --bg-raised: #f0eee9;
+    --bg-surface: #e8e5df;
+    --bg-terminal: #f5f3ef;
+    --border-subtle: #e0ddd7;
+    --border-medium: #ccc8c0;
+    --text-primary: #1a1816;
+    --text-secondary: #5c5750;
+    --text-muted: #9a958e;
+    --accent: #c78a20;
+    --accent-dim: #a06e18;
+    --accent-glow: rgba(199, 138, 32, 0.08);
+    --green: #3d7a3d;
+    --red: #c75a5a;
+    --blue: #3d6ea0;
+    --fn-color: #8060a0;
+    --nav-bg: rgba(250, 249, 247, 0.85);
+    --btn-primary-hover: #b37a1c;
+
+    --font-body: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'JetBrains Mono', 'IBM Plex Mono', 'Menlo', monospace;
+    --font-display: 'IBM Plex Mono', 'JetBrains Mono', monospace;
+  }
+
+  .dark {
+    --bg-primary: #0a0a0a;
+    --bg-raised: #141414;
+    --bg-surface: #1a1a1a;
+    --bg-terminal: #0e0e0e;
+    --border-subtle: #222;
+    --border-medium: #333;
+    --text-primary: #e8e4df;
+    --text-secondary: #9a958e;
+    --text-muted: #5c5750;
+    --accent: #e5a435;
+    --accent-dim: #b8842a;
+    --accent-glow: rgba(229, 164, 53, 0.08);
+    --green: #5fa85f;
+    --red: #c75a5a;
+    --blue: #5a8fc7;
+    --fn-color: #c0a0e0;
+    --nav-bg: rgba(10, 10, 10, 0.85);
+    --btn-primary-hover: #d4932e;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.7;
+    font-size: 15px;
+    overflow-x: hidden;
+    margin: 0;
+  }
+
+  a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  a:hover {
+    text-decoration: underline;
+  }
+
+  ::selection {
+    background: var(--accent);
+    color: var(--bg-primary);
+  }
+}
+
+@theme {
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-raised: var(--bg-raised);
+  --color-bg-surface: var(--bg-surface);
+  --color-bg-terminal: var(--bg-terminal);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-medium: var(--border-medium);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-accent: var(--accent);
+  --color-accent-dim: var(--accent-dim);
+  --color-accent-glow: var(--accent-glow);
+  --color-green: var(--green);
+  --color-red: var(--red);
+  --color-blue: var(--blue);
+  --color-fn: var(--fn-color);
+  --color-nav-bg: var(--nav-bg);
+  --color-btn-primary-hover: var(--btn-primary-hover);
+
+  --font-body: var(--font-body);
+  --font-mono: var(--font-mono);
+  --font-display: var(--font-display);
+
+  --radius-sm: 3px;
+}
+
+/* ─── Scroll reveal ─── */
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ─── Scrollbar hide ─── */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  scrollbar-width: none;
+}
+
+/* ─── Hero terminal animations ─── */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
